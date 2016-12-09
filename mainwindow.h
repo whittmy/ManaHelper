@@ -52,6 +52,8 @@ public:
     DownloadsDBManager *dbMan;
 
 public slots:
+    void UpdateDevStatus();
+
     int UpdateInterface();
     int ADownloadCompleted(QString);
 

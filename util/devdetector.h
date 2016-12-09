@@ -16,20 +16,18 @@ class DevDetector: public QObject
 public:
     DevDetector(HANDLE handle, QObject *parent = Q_NULLPTR);
     ~DevDetector();
-
+    void checkDev();
+    QString getDevPath();
+    bool nativeEvent(const QByteArray & eventType, void * message, long*result);
 
 signals:
     void devConnected(QString path);
+    void devRemoved();
 
-
-public:
-    QString getDevPath();
-    bool nativeEvent(const QByteArray & eventType, void * message, long*result);
 
 private:
     char FirstDriveFromMask (ULONG unitmask);
     void registerListener();
-    void checkDev();
     bool adaptRules(QString drive);
 
 private:

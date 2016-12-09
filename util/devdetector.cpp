@@ -1,8 +1,9 @@
 ﻿#include "devdetector.h"
-#include <QDebug>
 #include<QString>
 #include <QDir>
 #include <QFileInfo>
+#include <QDebug>
+
 
 static const GUID GUID_DEVINTERFACE_LIST[] =
 {
@@ -40,7 +41,7 @@ DevDetector::~DevDetector(){
 
 void DevDetector::registerListener(){
     _logger->info("begin registerListener");
-#if 1
+
  //注册插拔事件
    HDEVNOTIFY hDevNotify;
    DEV_BROADCAST_DEVICEINTERFACE NotifacationFiler;
@@ -54,13 +55,13 @@ void DevDetector::registerListener(){
        hDevNotify = RegisterDeviceNotification(/*(HANDLE)this->winId()*/_wnd,&NotifacationFiler,DEVICE_NOTIFY_WINDOW_HANDLE);
        if(!hDevNotify) {
            int Err = GetLastError();
-           qDebug() << u8"注册失败" <<endl;
+           _logger->info(u8"注册失败");
        }
        else{
-           qDebug() << u8"注册成功";
+           _logger->info(u8"注册成功");
        }
    }
- #endif
+
     _logger->info("end registerListener");
 }
 
@@ -88,29 +89,50 @@ void DevDetector::checkDev(){
         }
     }
 
+    _devPath = "";
+    emit devRemoved();
     _logger->info("end checkDev(no dev)");
 }
 
 bool DevDetector::adaptRules(QString drive){
-    _logger->info("begin adaptRules");
+    //_logger->info("begin adaptRules");
     //注意路径分隔符细节
     QString rule1 = QDir::toNativeSeparators(drive + "mmh.ico");
     QString rule2 = QDir::toNativeSeparators(drive + "CFG");
     QString rule3 = QDir::toNativeSeparators(drive + u8"艺术培养\\小小画家\\檬檬爱画画");
-    QString rule4 = QDir::toNativeSeparators(drive + u8"娱乐天地\\动画\\EP01-《星际小蚂蚁》_公益大使_防火安全系列_01_H264高清_1280x720.MP4");
+    QString rule4 = QDir::toNativeSeparators(drive + u8"娱乐天地\\动画\\EP01-《星际小蚂蚁》_公益大使_防火安全系列_01_H264高清_1280x720_GE.MP4");
     QString rule5 = QDir::toNativeSeparators(drive + u8"工具\\伴眠模式");
     QString rule6 = QDir::toNativeSeparators(drive + u8"工具\\相册");
-    _logger->info("end adaptRules");
+    //_logger->info("end adaptRules");
+
+    _logger->info(rule1);
+    _logger->info(rule2);
+    _logger->info(rule3);
+    _logger->info(rule4);
+    _logger->info(rule5);
+    _logger->info(rule6);
+    bool b1 = QFile::exists(rule1);
+    bool b2 = QFile::exists(rule2);
+    bool b3 = QFile::exists(rule3);
+    bool b4 = QFile::exists(rule4);
+    bool b5 = QFile::exists(rule5);
+    bool b6 = QFile::exists(rule6);
+    qDebug() << b1 << b2 << b3 << b4 << b5 <<b6;
+
+
+    if(b1 && b2 && b3 && b4 && b5 && b6){
+        return true;
+    }
+
     return false;
 }
 
 bool DevDetector::nativeEvent(const QByteArray &eventType, void *message, long *result){
-    _logger->info("begin nativeEvent");
+    //_logger->info("begin nativeEvent");
     MSG* msg = reinterpret_cast<MSG*>(message);
     int msgType = msg->message;
     if(msgType==WM_DEVICECHANGE)
     {
-        //qDebug() << "Event DEVICECHANGE Happend" << endl;
         PDEV_BROADCAST_HDR lpdb = (PDEV_BROADCAST_HDR)msg->lParam;
         switch (msg->wParam) {
         case DBT_DEVICEARRIVAL:
@@ -121,30 +143,27 @@ bool DevDetector::nativeEvent(const QByteArray &eventType, void *message, long *
                 {
                     //插入u盘
                     QString USBDisk = QString(this->FirstDriveFromMask(lpdbv ->dbcv_unitmask));
-                    qDebug() << "USB_Arrived and The USBDisk is: "<<USBDisk ;
-                    //ui->textBrowser->append("USB_Arrived and The USBDisk is " + USBDisk);
-
+                    _logger->info("USB_Arrived and The USBDisk is: " + USBDisk);
                 }
             }
             if(lpdb->dbch_devicetype = DBT_DEVTYP_DEVICEINTERFACE)
             {
                 PDEV_BROADCAST_DEVICEINTERFACE pDevInf  = (PDEV_BROADCAST_DEVICEINTERFACE)lpdb;
-
                 QString strname = QString::fromWCharArray(pDevInf->dbcc_name,pDevInf->dbcc_size);
-                qDebug() << u8"插入设备: " << QString::fromUtf8(strname.toLatin1().data());
-               // ui->textBrowser->append("插入设备 ：" + strname);
+                _logger->info(u8"插入设备: " + QString::fromUtf8(strname.toLatin1().data()));
+
+                //更新设备
+                checkDev();
             }
             break;
         case DBT_DEVICEREMOVECOMPLETE:
-            qDebug() << u8"设备移除" <<endl;
+            _logger->info(u8"设备移除");
             if(lpdb->dbch_devicetype == DBT_DEVTYP_VOLUME)
             {
                 PDEV_BROADCAST_VOLUME lpdbv = (PDEV_BROADCAST_VOLUME)lpdb;
                 if(lpdbv->dbcv_flags == 0)
                 {
-                    qDebug() << "USB_Removed";
-                    //ui->textBrowser->append("USB_Remove");
-
+                    _logger->info("USB_Removed");
                 }
             }
             if(lpdb->dbch_devicetype = DBT_DEVTYP_DEVICEINTERFACE)
@@ -155,15 +174,16 @@ bool DevDetector::nativeEvent(const QByteArray &eventType, void *message, long *
                 qDebug()<< u8"移除设备(size)：" << pDevInf->dbcc_size;
 
                 QString strname = QString::fromWCharArray(pDevInf->dbcc_name,pDevInf->dbcc_size);
-                qDebug() << u8"移除设备："+ QString::fromUtf8(strname.toLatin1().data());
-                //ui->textBrowser->append("移除设备 " + strname);
+                _logger->info(u8"移除设备："+ QString::fromUtf8(strname.toLatin1().data())); //转utf8!!!!!!!!!
+
+                //更新设备检查
+                checkDev();
             }
             break;
         }
     }
-    _logger->info("end nativeEvent");
+    //_logger->info("end nativeEvent");
     return false;
-
 }
 
 char DevDetector::FirstDriveFromMask (ULONG unitmask){

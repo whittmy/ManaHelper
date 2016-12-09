@@ -10,6 +10,10 @@ MainWindow::MainWindow(QWidget *parent) :
    mDownLoader(new DownLoader())
 {
     ui->setupUi(this);
+
+    //设备检测器
+    _devdetector = new DevDetector((HANDLE)this->winId(), this);
+
     MainWindow::dbMan = new DownloadsDBManager();
     checkFirstRun();
     readSettings();
@@ -50,9 +54,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(mDownLoader, SIGNAL(downloadFinished(QString)), this, SLOT(ADownloadCompleted(QString)));
 
     //设备检查
-    _logger->info(">>> DevDetector");
-    _devdetector = new DevDetector((HANDLE)this->winId(), this);
-    _logger->info("DevDetector <<<<");
+    connect(_devdetector, SIGNAL(devConnected(QString)), this, SLOT(UpdateDevStatus()));
+    connect(_devdetector, SIGNAL(devRemoved()),this, SLOT(UpdateDevStatus()));
+    _devdetector->checkDev();
+
 }
 
 
@@ -61,8 +66,20 @@ MainWindow::~MainWindow()
     delete ui;
     delete _logger;
     delete mDownLoader;
-    //delete _devdetector;
+    delete _devdetector;
 }
+
+
+void MainWindow::UpdateDevStatus(){
+    _logger->info("--UpdateDevStatus--");
+    if(_devdetector->getDevPath().isEmpty()){
+        _logger->info("disconnect");
+    }
+    else{
+        _logger->info("connect");
+    }
+}
+
 
 //action_Add
 // setUrl, setLocalModel
@@ -805,6 +822,7 @@ void MainWindow::onDownloadDoesNotExistToRemove(const QUuid &uuid)
 
 
 bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, long *result){
-   //return _devdetector->nativeEvent(eventType, message, result);
+    if(_devdetector != NULL)
+        return _devdetector->nativeEvent(eventType, message, result);
     return false;
 }
