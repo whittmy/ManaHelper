@@ -35,7 +35,9 @@ SOURCES += main.cpp\
     download/status.cpp \
     util/paths.cpp    \
     util/devdetector.cpp    \
-    download/downloader.cpp
+    util/mytreeview.cpp \
+    download/downloader.cpp \
+    dialogs/devmanagerdialog.cpp
 
 
 HEADERS  += mainwindow.h \
@@ -61,7 +63,9 @@ HEADERS  += mainwindow.h \
     download/status.h \
     util/paths.h    \
     util/devdetector.h    \
-    download/downloader.h
+    util/mytreeview.h \
+    download/downloader.h \
+    dialogs/devmanagerdialog.h
 
 FORMS    += mainwindow.ui \
     dialogs/optionsdialog.ui \
@@ -71,7 +75,8 @@ FORMS    += mainwindow.ui \
     dialogs/downloadfinisheddialog.ui \
     dialogs/adddownloaddialog.ui \
     backend/proxy.ui \
-    backend/passworddialog.ui
+    backend/passworddialog.ui \
+    dialogs/devmanagerdialog.ui
 
 RESOURCES += images.qrc
 

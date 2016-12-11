@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "download/downloadconstants.h"
 #include <QDesktopWidget>
+#include "dialogs/devmanagerdialog.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -753,6 +754,9 @@ void MainWindow::on_actionAbout_triggered()
 {
    // About123 *about =new About123();
     //about->show();
+
+    DevManagerDialog *dlg = new DevManagerDialog(this);
+    dlg->show();
 }
 
 
