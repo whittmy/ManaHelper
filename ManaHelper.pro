@@ -7,6 +7,7 @@
 QT       += widgets core gui
 QT	 +=sql
 QT	 +=network
+QT       += xml
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -37,6 +38,8 @@ SOURCES += main.cpp\
     util/devdetector.cpp    \
     util/mytreeview.cpp \
     download/downloader.cpp \
+    datareq/httprequestor.cpp \
+    datareq/dataparser.cpp  \
     dialogs/devmanagerdialog.cpp
 
 
@@ -65,6 +68,9 @@ HEADERS  += mainwindow.h \
     util/devdetector.h    \
     util/mytreeview.h \
     download/downloader.h \
+    datareq/httprequestor.h \
+    datareq/appendix.h  \
+    datareq/dataparser.h    \
     dialogs/devmanagerdialog.h
 
 FORMS    += mainwindow.ui \

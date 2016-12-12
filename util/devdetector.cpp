@@ -105,19 +105,19 @@ bool DevDetector::adaptRules(QString drive){
     QString rule6 = QDir::toNativeSeparators(drive + u8"工具\\相册");
     //_logger->info("end adaptRules");
 
-    _logger->info(rule1);
-    _logger->info(rule2);
-    _logger->info(rule3);
-    _logger->info(rule4);
-    _logger->info(rule5);
-    _logger->info(rule6);
+//    _logger->info(rule1);
+//    _logger->info(rule2);
+//    _logger->info(rule3);
+//    _logger->info(rule4);
+//    _logger->info(rule5);
+//    _logger->info(rule6);
     bool b1 = QFile::exists(rule1);
     bool b2 = QFile::exists(rule2);
     bool b3 = QFile::exists(rule3);
     bool b4 = QFile::exists(rule4);
     bool b5 = QFile::exists(rule5);
     bool b6 = QFile::exists(rule6);
-    qDebug() << b1 << b2 << b3 << b4 << b5 <<b6;
+    //qDebug() << b1 << b2 << b3 << b4 << b5 <<b6;
 
 
     if(b1 && b2 && b3 && b4 && b5 && b6){

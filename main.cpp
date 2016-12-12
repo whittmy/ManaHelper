@@ -2,6 +2,21 @@
 #include <QApplication>
 #include <QtPlugin>
 #include <QFile>
+
+//>>>>>>>>>>>>>>>>
+#include "datareq/httprequestor.h"
+#include "datareq/dataparser.h"
+extern QString gUrlArr[];
+void ReqUgrade(QString str){
+    qDebug() << "----------- ReqUgrade ----------";
+   // qDebug() << str;
+    DataParser dp(str);
+    dp.parser();
+
+    qDebug() <<dp.getUrl() << dp.getMd5() << dp.getDescription();
+}
+//<<<<<<<<<<<<<<<<
+
 static QString strPidFile;
 
 void writePidFile()
@@ -14,6 +29,8 @@ void writePidFile()
     }
     file.write(QByteArray::number(100));
 }
+
+
 
 int main(int argc, char *argv[])
 {
@@ -33,6 +50,23 @@ int main(int argc, char *argv[])
 
     //if (!strPidFile.isEmpty())
     //        writePidFile();
+
+
+
+
+    //upgrade-request  test >>>>>>>>>>>
+    HttpRequestor* request = HttpRequestor::Instance();
+    PtrRequestInfo info = new RequestInfo();
+    info->url = gUrlArr[UPGRADE_SELF];
+    info->reqType = UPGRADE_SELF;
+    info->callback =ReqUgrade;
+
+    request->addTask(info);
+    //<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+    ////////////////////////
+
 
     MainWindow w;
     w.resize(800, 600);
