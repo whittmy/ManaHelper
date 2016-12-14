@@ -55,10 +55,10 @@ void DevDetector::registerListener(){
        hDevNotify = RegisterDeviceNotification(/*(HANDLE)this->winId()*/_wnd,&NotifacationFiler,DEVICE_NOTIFY_WINDOW_HANDLE);
        if(!hDevNotify) {
            int Err = GetLastError();
-           _logger->info(u8"注册失败");
+           _logger->info(/*u8*/QString::fromUtf8("注册失败"));
        }
        else{
-           _logger->info(u8"注册成功");
+           _logger->info(QString::fromUtf8("注册成功"));
        }
    }
 
@@ -99,10 +99,10 @@ bool DevDetector::adaptRules(QString drive){
     //注意路径分隔符细节
     QString rule1 = QDir::toNativeSeparators(drive + "mmh.ico");
     QString rule2 = QDir::toNativeSeparators(drive + "CFG");
-    QString rule3 = QDir::toNativeSeparators(drive + u8"艺术培养\\小小画家\\檬檬爱画画");
-    QString rule4 = QDir::toNativeSeparators(drive + u8"娱乐天地\\动画\\EP01-《星际小蚂蚁》_公益大使_防火安全系列_01_H264高清_1280x720_GE.MP4");
-    QString rule5 = QDir::toNativeSeparators(drive + u8"工具\\伴眠模式");
-    QString rule6 = QDir::toNativeSeparators(drive + u8"工具\\相册");
+    QString rule3 = QDir::toNativeSeparators(drive + QString::fromUtf8("艺术培养\\小小画家\\檬檬爱画画"));
+    QString rule4 = QDir::toNativeSeparators(drive + QString::fromUtf8("娱乐天地\\动画\\EP01-《星际小蚂蚁》_公益大使_防火安全系列_01_H264高清_1280x720_GE.MP4"));
+    QString rule5 = QDir::toNativeSeparators(drive + QString::fromUtf8("工具\\伴眠模式"));
+    QString rule6 = QDir::toNativeSeparators(drive + QString::fromUtf8("工具\\相册"));
     //_logger->info("end adaptRules");
 
 //    _logger->info(rule1);
@@ -150,14 +150,14 @@ bool DevDetector::nativeEvent(const QByteArray &eventType, void *message, long *
             {
                 PDEV_BROADCAST_DEVICEINTERFACE pDevInf  = (PDEV_BROADCAST_DEVICEINTERFACE)lpdb;
                 QString strname = QString::fromWCharArray(pDevInf->dbcc_name,pDevInf->dbcc_size);
-                _logger->info(u8"插入设备: " + QString::fromUtf8(strname.toLatin1().data()));
+                _logger->info(QString::fromUtf8("插入设备: ") + QString::fromUtf8(strname.toLatin1().data()));
 
                 //更新设备
                 checkDev();
             }
             break;
         case DBT_DEVICEREMOVECOMPLETE:
-            _logger->info(u8"设备移除");
+            _logger->info(QString::fromUtf8("设备移除"));
             if(lpdb->dbch_devicetype == DBT_DEVTYP_VOLUME)
             {
                 PDEV_BROADCAST_VOLUME lpdbv = (PDEV_BROADCAST_VOLUME)lpdb;
@@ -169,12 +169,12 @@ bool DevDetector::nativeEvent(const QByteArray &eventType, void *message, long *
             if(lpdb->dbch_devicetype = DBT_DEVTYP_DEVICEINTERFACE)
             {
                 PDEV_BROADCAST_DEVICEINTERFACE pDevInf  = (PDEV_BROADCAST_DEVICEINTERFACE)lpdb;
-                qDebug()<< u8"移除设备(name)：" << pDevInf->dbcc_name;
+                qDebug()<< QString::fromUtf8("移除设备(name)：") << pDevInf->dbcc_name;
                 //qDebug()<< "移除设备(guid)：" << pDevInf->dbcc_classguid;
-                qDebug()<< u8"移除设备(size)：" << pDevInf->dbcc_size;
+                qDebug()<< QString::fromUtf8("移除设备(size)：") << pDevInf->dbcc_size;
 
                 QString strname = QString::fromWCharArray(pDevInf->dbcc_name,pDevInf->dbcc_size);
-                _logger->info(u8"移除设备："+ QString::fromUtf8(strname.toLatin1().data())); //转utf8!!!!!!!!!
+                _logger->info(QString::fromUtf8("移除设备：")+ QString::fromUtf8(strname.toLatin1().data())); //转utf8!!!!!!!!!
 
                 //更新设备检查
                 checkDev();

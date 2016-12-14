@@ -42,4 +42,7 @@
     <qresource prefix="/files">
         <file>images/video.png</file>
     </qresource>
+    <qresource prefix="/html">
+        <file>html/devupgrade.html</file>
+    </qresource>
 </RCC>

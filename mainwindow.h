@@ -1,7 +1,6 @@
 ﻿#ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-
 #include <QMainWindow>
 
 #include <QTreeWidgetItem>
@@ -25,6 +24,8 @@
 #include "download/downloader.h"
 #include "backend/logme.h"
 #include "util/devdetector.h"
+
+#include "datareq/appendix.h"
 
 namespace Ui {
 class MainWindow;
@@ -96,13 +97,16 @@ protected:
 
 
 private:
-    Ui::MainWindow *ui;
-
     void checkFirstRun();
     void setDefaultSettings();
     void readSettings();
     void writeSettings();
 
+    void doUpdateChk();
+    static void ReqUgradeResult(REQ_TYPE type, QString str); //回调 静态
+
+private:
+    Ui::MainWindow *ui;
     DownLoader* mDownLoader;
     LogMe* _logger;
     DevDetector *_devdetector;

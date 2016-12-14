@@ -78,7 +78,7 @@ void HttpRequestor::slot_replyFinished(QObject* obj){
     if(i != mMap.end()){
         _logger->info("find the reply");
         if(i.value()->callback != NULL)
-            i.value()->callback(str);
+            i.value()->callback(i.value()->reqType, str);
 
         //--------------
         delete i.value();

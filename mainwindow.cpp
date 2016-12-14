@@ -4,6 +4,15 @@
 #include <QDesktopWidget>
 #include "dialogs/devmanagerdialog.h"
 
+//upgrade check >>>>
+#include "datareq/httprequestor.h"
+#include "datareq/dataparser.h"
+#include "dialogs/upgradetipdialog.h"
+
+extern QString gUrlArr[];
+//<<<<
+
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
@@ -20,7 +29,10 @@ MainWindow::MainWindow(QWidget *parent) :
     readSettings();
     model = new modelDownloads(this,dbMan->db);
 
+    //////////////////////////////////////////////
     //启动时暂停所有任务状态。!!!
+    //////////////////////////////////////////////
+
 
 
 
@@ -59,6 +71,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(_devdetector, SIGNAL(devRemoved()),this, SLOT(UpdateDevStatus()));
     _devdetector->checkDev();
 
+
+    //升级检查 软件/设备
+    doUpdateChk();
+
 }
 
 
@@ -80,6 +96,39 @@ void MainWindow::UpdateDevStatus(){
         _logger->info("connect");
     }
 }
+
+
+void MainWindow::doUpdateChk(){
+    HttpRequestor* request = HttpRequestor::Instance();
+    PtrRequestInfo info = new RequestInfo();
+    info->url = gUrlArr[UPGRADE_SELF];
+    info->reqType = UPGRADE_SELF;
+    info->callback = &MainWindow::ReqUgradeResult;
+    request->addTask(info);
+}
+
+void MainWindow::ReqUgradeResult(REQ_TYPE type, QString str){
+    qDebug() << "----------- ReqUgradeResult ----------";
+
+    DataParser *dp = new DataParser(str);
+    dp->parser();
+    if(dp->isValid()){
+        qDebug() << dp->getUrl() << dp->getMd5() << dp->getDescription();
+
+        //弹框提示
+        UpgradeTipDialog *dlg = new UpgradeTipDialog();
+        dlg->setModal(true);
+        dlg->setData(type, dp);
+
+
+
+        dlg->show();
+    }
+
+
+    //delete dlg;
+}
+
 
 
 //action_Add

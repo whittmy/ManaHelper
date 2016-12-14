@@ -8,6 +8,7 @@ QT       += widgets core gui
 QT	 +=sql
 QT	 +=network
 QT       += xml
+QT       += webkitwidgets
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -40,7 +41,8 @@ SOURCES += main.cpp\
     download/downloader.cpp \
     datareq/httprequestor.cpp \
     datareq/dataparser.cpp  \
-    dialogs/devmanagerdialog.cpp
+    dialogs/devmanagerdialog.cpp \
+    dialogs/upgradetipdialog.cpp
 
 
 HEADERS  += mainwindow.h \
@@ -71,7 +73,8 @@ HEADERS  += mainwindow.h \
     datareq/httprequestor.h \
     datareq/appendix.h  \
     datareq/dataparser.h    \
-    dialogs/devmanagerdialog.h
+    dialogs/devmanagerdialog.h \
+    dialogs/upgradetipdialog.h
 
 FORMS    += mainwindow.ui \
     dialogs/optionsdialog.ui \
@@ -82,7 +85,8 @@ FORMS    += mainwindow.ui \
     dialogs/adddownloaddialog.ui \
     backend/proxy.ui \
     backend/passworddialog.ui \
-    dialogs/devmanagerdialog.ui
+    dialogs/devmanagerdialog.ui \
+    dialogs/upgradetipdialog.ui
 
 RESOURCES += images.qrc
 
