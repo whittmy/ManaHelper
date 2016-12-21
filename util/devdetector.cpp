@@ -94,6 +94,8 @@ void DevDetector::checkDev(){
     _logger->info("end checkDev(no dev)");
 }
 
+
+// QStringLiteral 效果要比 QString::fromUtf8好
 bool DevDetector::adaptRules(QString drive){
     //_logger->info("begin adaptRules");
     //注意路径分隔符细节

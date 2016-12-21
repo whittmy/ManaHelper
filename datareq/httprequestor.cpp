@@ -10,7 +10,7 @@ QString gUrlArr[] = {
 
 
 //静态成员变量初始化
-HttpRequestor* HttpRequestor::m_http_requestor = NULL;
+//HttpRequestor* HttpRequestor::m_http_requestor = NULL;
 
 
 HttpRequestor::HttpRequestor(QObject *parent)
@@ -31,19 +31,19 @@ HttpRequestor::~HttpRequestor(){
         delete _finishedSignalMapper;
 
     //???
-    if(m_http_requestor != NULL)
-        delete m_http_requestor;
+//    if(m_http_requestor != NULL)
+//        delete m_http_requestor;
 }
 
 
 
 
 
-HttpRequestor * HttpRequestor::Instance(QObject *parent){
-    if(m_http_requestor == NULL)
-        m_http_requestor = new HttpRequestor(parent);
-    return m_http_requestor;
-}
+//HttpRequestor * HttpRequestor::Instance(QObject *parent){
+//    if(m_http_requestor == NULL)
+//        m_http_requestor = new HttpRequestor(parent);
+//    return m_http_requestor;
+//}
 
 
 //该函数important， 同类批量信号槽操作。
@@ -79,6 +79,10 @@ void HttpRequestor::slot_replyFinished(QObject* obj){
         _logger->info("find the reply");
         if(i.value()->callback != NULL)
             i.value()->callback(i.value()->reqType, str);
+
+        //信号发送
+        emit sig_onFinished(str, i.value());
+
 
         //--------------
         delete i.value();

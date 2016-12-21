@@ -22,10 +22,7 @@
 #define YODOWNET_H
 
 #include <QObject>
-#include <QNetworkAccessManager>
-#include <QNetworkRequest>
-#include <QNetworkReply>
-#include <QSignalMapper>
+
 #include <QUrl>
 #include <QHash>
 #include <QDir>
@@ -34,6 +31,7 @@
 #include <download/download.h>
 #include "download/status.h"
 #include "backend/logme.h"
+#include "dloader_common.h"
 
 
 //每个任务的下载器
@@ -42,6 +40,12 @@ class DownLoader : public QObject
     Q_OBJECT
 public:
     explicit DownLoader(QObject *parent = 0);
+    ~DownLoader();
+    void start(const int ID, const QString &url, const QUuid &uuid, const QString &fileName);
+    void pause(const QUuid &uuid);
+    void remove(const QUuid &uuid);
+
+
 
 signals:
     void downloadInitialed(const Download *download);
@@ -54,32 +58,11 @@ signals:
     void downloadDoesNotExistToRemove(const QUuid &uuid);
 
 public slots:
-    //addDownload兼start操作
-    void addDownload(const int ID, const QString &url, const QUuid &uuid=QUuid(), const QString &fileName=QString());
-    void pauseDownload(const QUuid &uuid);
-    void removeDownload(const QUuid &uuid);
-
-private slots:
-    void replyMetaDataChanged(QObject *currentReply);
-    void startRequest(Download *newDownload);
-    void httpReadyRead(QObject *currentReply);
-    void httpFinished(QObject *currentReply);
-    // TODO: Removing file can be done in `Download` class.
-    void removeFile(QFile *file);
-
-public:
-    int getTaskingCnt(){return _downloadHash->size();} //获取正在下载的任务数
+    void slot_onTaskAdded(Download *download);
 
 private:
-    QNetworkAccessManager _manager;
-    QNetworkReply *_reply;
-    QSignalMapper *_readyReadSignalMapper;
-    QSignalMapper *_metaChangedSignalMapper;
-    QSignalMapper *_finishedSignalMapper;
-    QHash<QNetworkReply*, Download*> *_downloadHash;
-    QHash<QUrl, Status*> *_statusHash;
 
-    QUrl redirectUrl(const QUrl &possibleRedirectUrl, const QUrl &oldRedirectUrl) const;
+    DLoader_common *mDloader;
     LogMe* _logger;
 };
 

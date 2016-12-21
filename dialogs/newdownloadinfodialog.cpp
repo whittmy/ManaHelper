@@ -124,7 +124,7 @@ void NewDownloadInfoDialog::on_pushButton_3_clicked()
 //        connect(mManager,SIGNAL(progress(int)),this,SLOT(progress(int)));
 //        mManager->startDownload(QUrl(url));
 
-          mDownLoader->addDownload(ID, url, uuid, filename);
+          mDownLoader->start(ID, url, uuid, filename);
     }
 
     this->destroy();

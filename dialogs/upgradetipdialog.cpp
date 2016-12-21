@@ -31,7 +31,7 @@ UpgradeTipDialog::~UpgradeTipDialog()
 }
 
 //既然设置都是合法的
-void UpgradeTipDialog::setData(REQ_TYPE type, DataParser *dp){
+void UpgradeTipDialog::setData(REQ_TYPE type, Xml_Parser_Upgrade *dp){
     _dp = dp; mType = type;
 
     QString intro = _dp->getDescription();
@@ -79,7 +79,7 @@ void UpgradeTipDialog::dl_finished(){
         //拷贝到设备根目录下
 
         //载入操作提示
-        ui->_webView->load(QUrl("qrc:///html/html/devupgrade.html"));
+        ui->_webView->load(QUrl("qrc:///other/html/devupgrade.html"));
 
 
     }

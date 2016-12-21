@@ -16,6 +16,9 @@ TARGET = ManaHelper
 TEMPLATE = app
 LIBS += -luser32      ##解决RegisterDeviceNotification 链接出错问题
 
+
+
+
 SOURCES += main.cpp\
         mainwindow.cpp \
     backend/modeldownloads.cpp \
@@ -38,11 +41,14 @@ SOURCES += main.cpp\
     util/paths.cpp    \
     util/devdetector.cpp    \
     util/mytreeview.cpp \
+    util/codec.cpp  \
     download/downloader.cpp \
     datareq/httprequestor.cpp \
-    datareq/dataparser.cpp  \
     dialogs/devmanagerdialog.cpp \
-    dialogs/upgradetipdialog.cpp
+    dialogs/upgradetipdialog.cpp \
+    download/dloader_common.cpp \
+    datareq/xml_parser_upgrade.cpp \
+    datareq/xml_parser_playurl.cpp
 
 
 HEADERS  += mainwindow.h \
@@ -69,12 +75,15 @@ HEADERS  += mainwindow.h \
     util/paths.h    \
     util/devdetector.h    \
     util/mytreeview.h \
+    util/codec.h    \
     download/downloader.h \
     datareq/httprequestor.h \
     datareq/appendix.h  \
-    datareq/dataparser.h    \
     dialogs/devmanagerdialog.h \
-    dialogs/upgradetipdialog.h
+    dialogs/upgradetipdialog.h \
+    download/dloader_common.h \
+    datareq/xml_parser_playurl.h \
+    datareq/xml_parser_upgrade.h
 
 FORMS    += mainwindow.ui \
     dialogs/optionsdialog.ui \

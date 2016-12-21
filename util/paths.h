@@ -32,7 +32,7 @@ public:
 
     static QString translationPath();
     static QString docPath();
-    static QString saveDir();
+    static QString cacheDirPath();
 };
 
 #endif // PATHS_H

@@ -18,22 +18,25 @@ class HttpRequestor : public QObject
 {
     Q_OBJECT
 public:
-    static HttpRequestor * Instance(QObject *parent=NULL);
+    HttpRequestor(QObject *parent=NULL);
+    //static HttpRequestor * Instance(QObject *parent=NULL);
     ~HttpRequestor();
 
     void addTask(PtrRequestInfo req); //传入请求信息，包括回调函数
 
+signals:
+    void sig_onFinished(QString result, PtrRequestInfo req);
 
 private slots:
     void slot_replyFinished(QObject*);
 
 
-private:
-    HttpRequestor(QObject *parent=NULL);
+
+
 
 private:
     QNetworkAccessManager *m_manager;
-    static HttpRequestor * m_http_requestor;
+    //static HttpRequestor * m_http_requestor;
     QHash<QNetworkReply*, PtrRequestInfo> mMap;
 
     QSignalMapper* _finishedSignalMapper;

@@ -6,7 +6,7 @@
 
 //upgrade check >>>>
 #include "datareq/httprequestor.h"
-#include "datareq/dataparser.h"
+#include "datareq/xml_parser_upgrade.h"
 #include "dialogs/upgradetipdialog.h"
 
 extern QString gUrlArr[];
@@ -99,18 +99,18 @@ void MainWindow::UpdateDevStatus(){
 
 
 void MainWindow::doUpdateChk(){
-    HttpRequestor* request = HttpRequestor::Instance();
-    PtrRequestInfo info = new RequestInfo();
-    info->url = gUrlArr[UPGRADE_SELF];
-    info->reqType = UPGRADE_SELF;
-    info->callback = &MainWindow::ReqUgradeResult;
-    request->addTask(info);
+//    HttpRequestor* request = HttpRequestor::Instance();
+//    PtrRequestInfo info = new RequestInfo();
+//    info->url = gUrlArr[UPGRADE_SELF];
+//    info->reqType = UPGRADE_SELF;
+//    info->callback = &MainWindow::ReqUgradeResult;
+//    request->addTask(info);
 }
 
 void MainWindow::ReqUgradeResult(REQ_TYPE type, QString str){
     qDebug() << "----------- ReqUgradeResult ----------";
 
-    DataParser *dp = new DataParser(str);
+    Xml_Parser_Upgrade *dp = new Xml_Parser_Upgrade(str);
     dp->parser();
     if(dp->isValid()){
         qDebug() << dp->getUrl() << dp->getMd5() << dp->getDescription();
@@ -394,7 +394,7 @@ void MainWindow::on_actionStop_Download_triggered(){
     foreach (QModelIndex index, indexes) { //遍历, 取最后一个？？
          int row = index.row(); // row-index: int type
          QUuid uuid = QUuid(model->getUuid(row));
-         mDownLoader->pauseDownload(uuid);
+         mDownLoader->pause(uuid);
      }
 }
 
@@ -600,7 +600,7 @@ void MainWindow::on_actionDownload_Now_triggered()
         QString uuid = model->getUuid(row);
 
         //开始下载
-        mDownLoader->addDownload(ID, url, uuid, filename);
+        mDownLoader->start(ID, url, uuid, filename);
     }
 }
 

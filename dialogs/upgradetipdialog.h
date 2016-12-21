@@ -3,7 +3,7 @@
 
 #include <QDialog>
 #include "backend/logme.h"
-#include "datareq/dataparser.h"
+#include "datareq/xml_parser_upgrade.h"
 #include "datareq/appendix.h"
 
 #include <QNetworkAccessManager>
@@ -21,7 +21,7 @@ public:
     explicit UpgradeTipDialog(QWidget *parent = 0);
     ~UpgradeTipDialog();
 
-    void setData(REQ_TYPE type, DataParser *dp);
+    void setData(REQ_TYPE type, Xml_Parser_Upgrade *dp);
 
 private slots:
     void on__btnUpgrade_clicked();
@@ -40,7 +40,7 @@ private:
     Ui::UpgradeTipDialog *ui;
     LogMe *_logger;
     REQ_TYPE mType;
-    DataParser *_dp;
+    Xml_Parser_Upgrade *_dp;
 };
 
 #endif // UPGRADETIPDIALOG_H

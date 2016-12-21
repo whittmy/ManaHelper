@@ -25,6 +25,9 @@
 #include <QFile>
 #include <QUuid>
 #include <QUrl>
+#include <QVector>
+
+#include "datareq/httprequestor.h"
 #include "backend/logme.h"
 #include "download/status.h"
 
@@ -35,6 +38,7 @@ class Download : public QObject
 
 public:
     explicit Download(QObject *parent = 0);
+    ~Download();
 
     bool newDownload(const int ID, const QUrl &url, const QUuid &uuid=QUuid(), const QString &fileName=QString());
 
@@ -67,10 +71,30 @@ public:
     int ID() const;
     void setID(const int id);
 
+
+public:
+    QUrl getCurSegUrl();
+    int getCurSegIdx();
+    int getSegCnt();
+    void doNextSeg(); //含当前段的证明，段号的递增等工作
+    bool bSegEnd();
+
+
+signals:
+    void sig_onTaskAdded(Download* download);
+private slots:
+    void slot_onHttpReqFinished(QString result, PtrRequestInfo info);
+
 private:
+
+    void preTreatment(); //对url进行预处理：1. 分类； 2. 最终分解为url列表
+    QVector<QUrl> mSegUrls;  //对url的顺序有严格要求
+    int mCurSegIdx;
+    HttpRequestor *mHttp;
+
     int _ID;
     QFile *_file;
-    QUrl _url;
+    QUrl _url;  //原始URL
     QString _name;
     QString _path;
     QUuid _uuid;

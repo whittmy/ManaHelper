@@ -43,11 +43,12 @@ public:
         Idle,
         Starting,
         Downloading,
-        Finished, //下载完成&&转换完成&&存储完成
+        WaitTrans, //下载完成&&转换完成&&存储完成
         Failed,
         Paused,
         Transing,//转换中
-        Storing //正在存储
+        Storing, //正在存储
+        Finished //真正完成
     };
     static QString transDownLoadString(int status) ;
     QString downloadStatusString() const;
@@ -56,9 +57,14 @@ public:
     QString downloadModeString() const;
 
     void setFileAlreadyBytes(const qint64 fileAlreadyBytes);
-    void setBytesTotal(const qint64 totalLength);
 
+    void setBytesTotal(const qint64 totalLength);
     qint64 bytesTotal() const;
+
+    void setBytesSegTotal(const qint64 total);
+    qint64 bytesSegTotal() const;
+    int progressSeg() const;
+
     void setBytesReceived(const qint64 completedLength);
 
     qint64 bytesReceived() const;
@@ -80,7 +86,7 @@ public slots:
 private:
     QString _remainingTime;
     qint64 _fileAlreadyBytes;
-    qint64 _bytesTotal;
+    qint64 _bytesTotal, _bytesSegTotal;
     qint64 _bytesReceived;
     int _downloadRate;
     int _progress;

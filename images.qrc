@@ -42,7 +42,8 @@
     <qresource prefix="/files">
         <file>images/video.png</file>
     </qresource>
-    <qresource prefix="/html">
+    <qresource prefix="/other">
         <file>html/devupgrade.html</file>
+        <file>bin/ffmpeg.exe</file>
     </qresource>
 </RCC>

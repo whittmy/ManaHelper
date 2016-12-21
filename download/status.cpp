@@ -95,7 +95,7 @@ QString Status::transDownLoadString(int status){
         return "Starting";
     case Downloading:
         return "Downloading";
-    case Finished:
+    case WaitTrans:
         return "Finished";
     case Failed:
         return "Failed";
@@ -152,6 +152,14 @@ void Status::setBytesTotal(const qint64 totalLength)
 qint64 Status::bytesTotal() const
 {
     return _bytesTotal;
+}
+
+void Status::setBytesSegTotal(const qint64 total){
+    _bytesSegTotal = total;
+}
+
+qint64 Status::bytesSegTotal() const{
+    return _bytesSegTotal;
 }
 
 void Status::setBytesReceived(const qint64 completedLength)

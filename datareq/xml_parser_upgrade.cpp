@@ -1,18 +1,18 @@
-﻿#include "dataparser.h"
+﻿#include "xml_parser_upgrade.h"
 
 
-DataParser::DataParser(QString parserText)
+Xml_Parser_Upgrade::Xml_Parser_Upgrade(QString parserText)
     :QObject(NULL)
 {
     mReader = new QXmlStreamReader(parserText);
     mIsvalid = false;
 }
 
-DataParser::~DataParser(){
+Xml_Parser_Upgrade::~Xml_Parser_Upgrade(){
     delete mReader;
 }
 
-void DataParser::parser(){
+void Xml_Parser_Upgrade::parser(){
     while(!mReader->atEnd() && !mReader->hasError()){
         QXmlStreamReader::TokenType token = mReader->readNext();
         if(token == QXmlStreamReader::StartDocument)
@@ -41,18 +41,18 @@ void DataParser::parser(){
     mIsvalid = true;
 }
 
-bool DataParser::isValid(){
+bool Xml_Parser_Upgrade::isValid(){
     return mIsvalid;
 }
 
-QString DataParser::getUrl(){
+QString Xml_Parser_Upgrade::getUrl(){
     return mUrl;
 }
 
-QString DataParser::getMd5(){
+QString Xml_Parser_Upgrade::getMd5(){
     return mMd5;
 }
 
-QString DataParser::getDescription(){
+QString Xml_Parser_Upgrade::getDescription(){
     return mIntro;
 }

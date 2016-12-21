@@ -35,7 +35,7 @@ QString Paths::docPath()
 }
 
 
-QString Paths::saveDir()
+QString Paths::cacheDirPath()
 {
 //    QSettings settings;
 //    settings.beginGroup("PreferencesDialog");

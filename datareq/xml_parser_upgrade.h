@@ -1,5 +1,5 @@
-﻿#ifndef DATAPARSER_H
-#define DATAPARSER_H
+﻿#ifndef UPDATAPARSER_H
+#define UPDATAPARSER_H
 
 #include <QObject>
 #include <QString>
@@ -10,11 +10,11 @@
 ///
 
 
-class DataParser: public QObject{
+class Xml_Parser_Upgrade: public QObject{
     Q_OBJECT
 public:
-    DataParser(QString parserText);
-    ~DataParser();
+    Xml_Parser_Upgrade(QString parserText);
+    ~Xml_Parser_Upgrade();
     
     void parser();
     QString getUrl();
@@ -31,4 +31,4 @@ private:
     QXmlStreamReader *mReader;
 };
 
-#endif // DATAPARSER_H
+#endif // UPDATAPARSER_H

@@ -3,6 +3,8 @@
 #include <QtPlugin>
 #include <QFile>
 
+#include "datareq/xml_parser_playurl.h"
+#include "util/codec.h"
 
 static QString strPidFile;
 
@@ -39,23 +41,20 @@ int main(int argc, char *argv[])
     //        writePidFile();
 
 
+//    QFile f("C:\\Users\\Administrator\\Desktop\\url.php.xml");
+//    UrlDataParser p(f);
+//    p.parser();
+//    qDebug()<<p.getFiles();
 
-//    QFile inputFile(":/html/html/devupgrade.html");
-//    // 只读打开：
-//    inputFile.open(QIODevice::ReadOnly);
-//    // 文本流：
-//    QTextStream in(&inputFile);
-//    // 将文本流读取到字符串中：
-//    QString line = in.readAll();
-//    qDebug()<<line;
 
+//       Codec cd;
+//       cd.setFileInfo("D:\\WorkSpace\\python\\you-get",  QStringLiteral("北上广依然相信爱情第8集"));
+//       cd.concat();
 
     MainWindow w;
     w.resize(800, 600);
     w.move(200,100);
     w.show();
-
-
     return app.exec();
 }
 
