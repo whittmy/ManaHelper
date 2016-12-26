@@ -8,7 +8,7 @@
 #include<InitGuid.h>
 #include <QString>
 #include<QObject>
-#include "backend/logme.h"
+#include "util/logme.h"
 
 class DevDetector: public QObject
 {
@@ -17,11 +17,11 @@ public:
     DevDetector(HANDLE handle, QObject *parent = Q_NULLPTR);
     ~DevDetector();
     void checkDev();
-    QString getDevPath();
+    static QString getDevPath();
     bool nativeEvent(const QByteArray & eventType, void * message, long*result);
 
 signals:
-    void devConnected(QString path);
+    void devConnected();
     void devRemoved();
 
 
@@ -31,7 +31,7 @@ private:
     bool adaptRules(QString drive);
 
 private:
-    QString _devPath;
+    static QString _devPath;
     HANDLE _wnd;
     LogMe *_logger;
 

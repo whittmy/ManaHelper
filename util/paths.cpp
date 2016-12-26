@@ -43,6 +43,6 @@ QString Paths::cacheDirPath()
 //    QString savePath = settings.value("saveDir", QDir::homePath()).toString() + QDir::toNativeSeparators("/");
 //    settings.endGroup();
 //    settings.endGroup();
-    QString savePath = "c:\\";
+    QString savePath = "c:\\qt_test\\";
     return savePath;
 }

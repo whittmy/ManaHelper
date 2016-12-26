@@ -4,18 +4,51 @@
 //静态成员变量初始化
 DLoader_common* DLoader_common::mInstance = NULL;
 
+/*
+ Usage:
+
+ Step1:
+    Download *newDownload = new Download(this);
+    connect(newDownload, SIGNAL(sig_onTaskAdded(Download*)), this, SLOT(slot_onTaskAdded(Download*)));
+
+    //当添加完成后，会自动触发slot_onTaskAdded函数
+    newDownload->newDownload(ID, url, uuid, fileName);
+
+ Step2:
+    void DownLoader::slot_onTaskAdded(Download *download){
+        _logger->info("slot_onTaskAdded");
+        if(download->getCurSegUrl().isEmpty()){
+            _logger->error("empty url");
+            return;
+        }
+        DLoader_common *m_DLoader = DLoader_common::Instance();
+        mDloader->doStart(download);
+    }
+ Step3: signals
+    void sg_dlInitialed(const Download *download);
+    void sg_dlPaused(const Download *download);
+    void sg_dlResumed(const Download *download);
+    void sg_dlUpdated(const Download *download);
+    void sg_dlRemoved(const Download *download);
+    void sg_dlFinished(const Download *download);
+
+ Step4:
+    DLoader_common::free();
+ */
+
+
 
 DLoader_common::DLoader_common(QObject *parent) :
     QObject(parent),
     _downloadHash(new QHash<QNetworkReply*, Download*>),
     _logger(new LogMe(this)),
-    _statusHash( new QHash<QUrl, Status*>)
+    _statusHash( new QHash<QUrl, Status*>),
+    _redirectHash(new QHash<QUrl, QUrl>)
 {
     _logger->info(QString("Initialing `SignalMapper`s"));
     _readyReadSignalMapper = new QSignalMapper(this);
     _metaChangedSignalMapper = new QSignalMapper(this);
     _finishedSignalMapper = new QSignalMapper(this);
-
 
 }
 
@@ -24,6 +57,7 @@ DLoader_common::~DLoader_common(){
     delete _logger;
     delete _downloadHash;
     delete _statusHash;
+    delete _redirectHash;
 
     delete _readyReadSignalMapper;
     delete _metaChangedSignalMapper;
@@ -45,52 +79,58 @@ void DLoader_common::free(){
 //那在暂停等操作时，得清除指定任务的网络状态吧(如 reply的释放，hash信息的删除等)！！！
 void DLoader_common::doStart(Download* newDownload)
 {
-    _logger->info(QString("doStart for '%1'").arg(newDownload->url().toString()));
-    _logger->info(QString("curSeg:%1, %2").arg(newDownload->getCurSegIdx()).arg(newDownload->getCurSegUrl().toString()));
+    _logger->info(QString("doStart for main-url: %1 ").arg(newDownload->url().toString()));
+    _logger->info(QString("curSeg:%1=>%2").arg(newDownload->getCurSegIdx()).arg(newDownload->getCurSegUrl().toString()));
 
     _bUserInterupt = false;
 
-    //若所有段已下载完成
-    if(newDownload->bSegEnd()/*|| newDownload->url().isEmpty()*/){
-        newDownload->status()->setDownloadStatus(Status::WaitTrans);
+    //若所有段已下载完成,则任务完成
+    if(newDownload->bSegEnd()){
+        _logger->info("end of seg, task-complated!!");
+        newDownload->status()->setDownloadStatus(Status::WaitCombine);
         slot_httpFinished(newDownload);
         return;
     }
 
-
+    if(!newDownload->bfileValid()){
+        _logger->info("file is not valid...");
+        exit(0);
+    }
     //这儿的断点续传的思路是，根据已下载的临时文件的大小作为断点，不用用自己记录的下载数据，可以避免数据不一致的麻烦。
     //取当前段url进行下载
     //QNetworkRequest request(newDownload->url().toString());
+
+    newDownload->slot_httpError(QNetworkReply::NoError, "");//reset error flag
+
     QNetworkRequest request(newDownload->getCurSegUrl().toString());
-    request.setRawHeader("Range", QByteArray("bytes=SIZE-").replace("SIZE", QVariant(newDownload->file()->size()).toByteArray()));
+    _logger->info(QString("get-cur-seg_alreadybyte:%1").arg(newDownload->getFileSize()));
+    request.setRawHeader("Range", QByteArray("bytes=SIZE-").replace("SIZE", QVariant(newDownload->getFileSize()).toByteArray()));
 
     //多段url，计算总文件大小是个难题
-    newDownload->status()->setFileAlreadyBytes(newDownload->file()->size());
+    newDownload->status()->setFileAlreadyBytes(newDownload->getFileSize()/*newDownload->file()->size()*/);
 
     QNetworkReply *reply = _manager.get(request);
     newDownload->status()->setDownloadStatus(Status::Starting);
 
+    //将每一个reply-download, reply'url- download'status 关联。
+    //目的是根据reply找到download的相关状态，这些reply的url对应download中的分段url(或其重定向)
     QHash<QNetworkReply*, Download*>::iterator i = _downloadHash->insert(reply, newDownload);
     QHash<QUrl, Status*>::iterator statusIt = _statusHash->insert(i.key()->url(), newDownload->status());
 
     if (statusIt.value()->downloadMode() == Status::NewDownload) {
         emit sg_dlInitialed(i.value());
+        _logger->info("emit sg_dlInitialed");
     } else if (statusIt.value()->downloadMode() == Status::ResumeDownload) {
         emit sg_dlResumed(i.value());
+        _logger->info("emit sg_dlResumed");
     }
 
     //批量映射、关联信号槽
-    // Setup mapping on `SignalMapper`
-    _logger->info(QString("Setup mapping on signal mappers for `%1`").arg(newDownload->url().toString()));
-
     _readyReadSignalMapper->setMapping(i.key(), i.key());
     _metaChangedSignalMapper->setMapping(i.key(), i.key());
     _finishedSignalMapper->setMapping(i.key(), i.key());
 
-
     // Connecting signals to the `receivers` via `SignalMapper`
-    _logger->info(QString("Connecting signals to receivers via signals mappers for `%1`").arg(newDownload->url().toString()));
-
     //以下这4个信号，是QNetworkReply的内在的signal， //和map槽关联
     connect(i.key(), SIGNAL(readyRead()), _readyReadSignalMapper, SLOT(map()));
     connect(i.key(), SIGNAL(metaDataChanged()), _metaChangedSignalMapper, SLOT(map()));
@@ -98,33 +138,35 @@ void DLoader_common::doStart(Download* newDownload)
 
     //downloadProgress(bytesReceived, bytesTotal) ==>>> 触发status中的updateFileStatus
     connect(i.key(), SIGNAL(downloadProgress(qint64,qint64)), statusIt.value(), SLOT(updateFileStatus(qint64, qint64)));
+    //????connect(i.key(), SIGNAL(error(QNetworkReply::NetworkError)), i.value(), SLOT(slot_httpError(QNetworkReply::NetworkError, )));
 
     //QSignalMapper用于一组同类object的信号管理
     connect(_readyReadSignalMapper, SIGNAL(mapped(QObject*)), this, SLOT(slot_httpReadyRead(QObject*)));
     connect(_metaChangedSignalMapper, SIGNAL(mapped(QObject*)), this, SLOT(slot_replyMetaDataChanged(QObject*)));
     connect(_finishedSignalMapper, SIGNAL(mapped(QObject*)), this, SLOT(slot_httpFinished(QObject*)));
+    _logger->info("end doStart!!");
 }
 
 // TODO: emit signal when download hash is empty OR no download has been found
 void DLoader_common::doPause(const QUuid &uuid)
 {
-    _logger->info(QString("Pausing download [%1]").arg(uuid.toString()));
+    _logger->info(QString("doPause [%1]").arg(uuid.toString()));
     if(_downloadHash->isEmpty()){
         //!!!
+        _logger->info("_downloadHash is empty, return");
         return;
     }
 
     QHash<QNetworkReply*, Download*>::iterator i = _downloadHash->begin();
     while(i != _downloadHash->end()){
         if(i.value()->uuid() == uuid){
-            _logger->info(QString("Found download [%1] in hash.").arg(uuid.toString()));
+            _logger->info(QString("Found download [%1] in hash.begin to stop it").arg(uuid.toString()));
 
-
-            i.value()->file()->write(i.key()->readAll());
+            i.value()->writeFile(i.key()->readAll());
             Status *status = _statusHash->find(i.key()->url()).value();
             status->setDownloadStatus(Status::Paused);
 
-            _logger->info(QString("Emit 'downloadPaused' signal for [%1]").arg(uuid.toString()));
+            _logger->info(QString("Emit 'sg_dlPaused' for [%1]").arg(uuid.toString()));
             emit sg_dlPaused(i.value());
 
             _bUserInterupt = true;
@@ -153,6 +195,7 @@ void DLoader_common::freeReplyInfo(QNetworkReply* reply){
     _metaChangedSignalMapper->removeMappings(reply);
     _finishedSignalMapper->removeMappings(reply);
     reply->deleteLater();
+    reply->close();
 }
 
 void DLoader_common::doRemove(const QUuid &uuid)
@@ -192,12 +235,15 @@ void DLoader_common::doRemove(const QUuid &uuid)
 void DLoader_common::slot_replyMetaDataChanged(QObject *currentReply)
 {
     QHash<QNetworkReply*, Download*>::iterator i = _downloadHash->find(qobject_cast<QNetworkReply*>(currentReply));
+
     QNetworkReply *reply = i.key();
     Status *status = _statusHash->find(reply->url()).value();
 
     //文件大小计算1次即可，多段的计算比较粗略， 第一段大小乘以段数
     //为避免总大小经常变化,再恢复下载时，最后传入文件总大小
     qint64 size = reply->header(QNetworkRequest::ContentLengthHeader).toULongLong();
+    _logger->info(QString("enter - slot_replyMetaDataChanged, size=%1").arg(size));
+
     if(status->bytesTotal() == 0){
         status->setBytesTotal(size * i.value()->getSegCnt());
     }
@@ -212,88 +258,89 @@ void DLoader_common::slot_replyMetaDataChanged(QObject *currentReply)
 //而该函数可以向该类之外提供数据变化的接口(信号sg_dlUpdated )
 void DLoader_common::slot_httpReadyRead(QObject *currentReply)
 {
-    _logger->debug("httpReadyRead") ;
     QHash<QNetworkReply*, Download*>::iterator i = _downloadHash->find(qobject_cast<QNetworkReply*>(currentReply));
     QNetworkReply *reply = i.key();
     Download *download = i.value();
 
-    if (download->file()) {
+    if (download->bfileValid()) {
         Status *status = download->status();
-        download->file()->write(reply->readAll());
+        download->writeFile(reply->readAll());
         status->setDownloadStatus(Status::Downloading);
-
         emit sg_dlUpdated(download);
     }
 }
+
 
 //对应QNetworkReply中的某状态
 //当强制中断网络连接时，也会触发该槽对应的信号
 void DLoader_common::slot_httpFinished(QObject *currentReply)
 {
-    _logger->debug("httpFinished");
+    _logger->debug("slot_httpFinished");
     if(typeid(*currentReply) == typeid(Download)){
         //已完成
-        emit sg_dlFinished(qobject_cast<Download*>(currentReply));
+        Download *dl = qobject_cast<Download*>(currentReply);
+        _logger->info("task-completed for url:"+dl->url().toString());
+        emit sg_dlFinished(dl);
         return;
     }
 
     QHash<QNetworkReply*, Download*>::iterator i = _downloadHash->find(qobject_cast<QNetworkReply*>(currentReply));
+    if(i == _downloadHash->end()){
+        //here Caution!!!, very important
+        _logger->info("had found no this reply, returned");
+        return;
+    }
+
     Download *download = i.value();
     QNetworkReply *reply = i.key();
-    Status *status = _statusHash->find(reply->url()).value();
 
-    _logger->info(QString("HTTP request has finished for '%1'").arg(download->url().toString()));
+    //先 释放、关闭 reply!!!!
+    freeReplyInfo(reply);
 
     QVariant possibleRedirectUrl = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
-
-    // We'll deduct if the redirection is valid in the redirectUrl function
     download->setUrlRedirectedTo(possibleRedirectUrl.toUrl());
-
     if (!download->urlRedirectedTo().isEmpty()) {
-        _logger->info(QString("[%1] redirected to %2").arg( download->uuid().toString(), download->urlRedirectedTo().toString()) );
-        download->setUrl(download->urlRedirectedTo());
-/*  即便重定向，也不可置 _file为NULL，否则如何下载数据将往哪儿存？？？
-        //this->removeFile(download->file());
-        if(download->file() != NULL){
-            download->file()->close();
-            download->file()->remove();
-            download->setFile(0);
-        }
-        freeReplyInfo(reply);
-*/
+        _logger->info(QString("redirected:[%1]==>>>%2").arg( download->getCurSegUrl().toString(),
+                                                            download->urlRedirectedTo().toString()) );
+        //更新当前段url
+        download->setCurSegUrl(download->urlRedirectedTo());
+
         //重新开始
         this->doStart(download);
-        return;
 
-    } else {
-        /*
-         * We weren't redirected anymore
-         * so we arrived to the final destination...
-         */
-        download->urlRedirectedTo().clear();
+
+         return;
     }
 
 
-
-    //reply->deleteLater(); //!!!!!
+    /*
+     * We weren't redirected anymore
+     * so we arrived to the final destination...
+     */
+    download->urlRedirectedTo().clear();
+    _logger->info("have no redirect..");
 
     //若非用户中断的自然完成，则认为当前段已完成。
-    if(!_bUserInterupt){
+    if(!_bUserInterupt && download->errorCode()==QNetworkReply::NoError){
         _logger->info(QString("seg-%1 had completed!").arg(download->getCurSegIdx()));
+
         download->doNextSeg();
+        //i.key()->deleteLater();
+        //freeReplyInfo(reply);    //完全释放
+
 
         //继续开始新段下载
         doStart(download);
+        return;
     }
-    else{
-        //暂停等
-        download->file()->flush();
-        download->file()->close();
-        download->setFile(0);
 
-        //完全释放
-        freeReplyInfo(reply);
-    }
+
+    //暂停等
+    _logger->info("maybe pause!!!");
+    download->closeFile();
+    download->setFile(0);
+    //freeReplyInfo(i.key());
+
 
     //判断文件大小以确定是否下载完成
 //    if(/*status->downloadStatus() != Status::Paused*/download->bFinished()) {
@@ -313,10 +360,10 @@ void DLoader_common::slot_httpFinished(QObject *currentReply)
 //删除任务中的文件
 void DLoader_common::removeFile(Download *download)
 {
-    _logger->info(QString("Removing file: [%1]").arg(download->file()->fileName()));
+    _logger->info(QString("removeFile: [%1]").arg(download->fileName()));
 
-    if(!download->file()->remove()) {
-        _logger->error(QString("Couldn't remove [%1]. Error: %2").arg(download->file()->fileName(), download->file()->errorString()));
+    if(!download->removeFile()) {
+        _logger->error(QString("Couldn't remove [%1]. Error: %2").arg(download->fileName(), download->errString()));
         return;
     }
     download->setFile(0);

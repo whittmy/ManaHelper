@@ -13,7 +13,7 @@
 #include <QFileInfo>
 #include <download/download.h>
 #include "download/status.h"
-#include "backend/logme.h"
+#include "util/logme.h"
 
 
 //每个任务的下载器
@@ -53,6 +53,7 @@ private slots:
     void slot_httpReadyRead(QObject *currentReply);
     void slot_httpFinished(QObject *currentReply);
 
+
 private:
     void removeFile(Download *download);
 
@@ -62,12 +63,10 @@ public:
 private:
     QNetworkAccessManager _manager;
     //QNetworkReply *_reply;
-    QSignalMapper *_readyReadSignalMapper;
-    QSignalMapper *_metaChangedSignalMapper;
-    QSignalMapper *_finishedSignalMapper;
+    QSignalMapper *_readyReadSignalMapper, *_metaChangedSignalMapper, *_finishedSignalMapper;
     QHash<QNetworkReply*, Download*> *_downloadHash;
     QHash<QUrl, Status*> *_statusHash;
-
+    QHash<QUrl, QUrl> *_redirectHash;
     QUrl redirectUrl(const QUrl &possibleRedirectUrl, const QUrl &oldRedirectUrl) const;
     LogMe* _logger;
     static DLoader_common* mInstance;

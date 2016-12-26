@@ -4,6 +4,7 @@
 #include <QFileInfo>
 #include <QDebug>
 
+QString DevDetector::_devPath = "";
 
 static const GUID GUID_DEVINTERFACE_LIST[] =
 {
@@ -31,7 +32,7 @@ DevDetector::DevDetector(HANDLE handle, QObject *parent)
 {
     _logger->debug("DevDetector construct");
     registerListener();
-    checkDev();
+    //checkDev();
 }
 
 DevDetector::~DevDetector(){
@@ -55,10 +56,10 @@ void DevDetector::registerListener(){
        hDevNotify = RegisterDeviceNotification(/*(HANDLE)this->winId()*/_wnd,&NotifacationFiler,DEVICE_NOTIFY_WINDOW_HANDLE);
        if(!hDevNotify) {
            int Err = GetLastError();
-           _logger->info(/*u8*/QString::fromUtf8("注册失败"));
+           _logger->info(/*u8*/QStringLiteral("注册失败"));
        }
        else{
-           _logger->info(QString::fromUtf8("注册成功"));
+           _logger->info(QStringLiteral("注册成功"));
        }
    }
 
@@ -66,7 +67,8 @@ void DevDetector::registerListener(){
 }
 
 QString DevDetector::getDevPath(){
-    _logger->info("getDevPath : " + _devPath);
+    //_logger->info("getDevPath : " + _devPath);
+    qDebug() << "getDevPath : " << _devPath;
     return _devPath;
 }
 
@@ -79,32 +81,32 @@ void DevDetector::checkDev(){
     QFileInfoList list =  QDir::drives();
     for(QFileInfoList::const_iterator iter = list.end();iter != list.begin();){
         QString drive = (*(--iter)).absolutePath();
-        _logger->info(drive);
+        //_logger->info(drive);
 
         if(adaptRules(drive)){
             _devPath = drive;
-            emit devConnected(_devPath);
-            _logger->info("end checkDev(had dev)");
+            _logger->info("emit devConnected");
+            emit devConnected();
             return;
         }
     }
 
+    _logger->info("emit devRemoved()");
     _devPath = "";
     emit devRemoved();
-    _logger->info("end checkDev(no dev)");
 }
 
 
-// QStringLiteral 效果要比 QString::fromUtf8好
+//实际证明QStringLiteral对于中文字串的支持是有效的， 而QString::fromUtf8("中文")则无效
 bool DevDetector::adaptRules(QString drive){
     //_logger->info("begin adaptRules");
     //注意路径分隔符细节
     QString rule1 = QDir::toNativeSeparators(drive + "mmh.ico");
     QString rule2 = QDir::toNativeSeparators(drive + "CFG");
-    QString rule3 = QDir::toNativeSeparators(drive + QString::fromUtf8("艺术培养\\小小画家\\檬檬爱画画"));
-    QString rule4 = QDir::toNativeSeparators(drive + QString::fromUtf8("娱乐天地\\动画\\EP01-《星际小蚂蚁》_公益大使_防火安全系列_01_H264高清_1280x720_GE.MP4"));
-    QString rule5 = QDir::toNativeSeparators(drive + QString::fromUtf8("工具\\伴眠模式"));
-    QString rule6 = QDir::toNativeSeparators(drive + QString::fromUtf8("工具\\相册"));
+    QString rule3 = QDir::toNativeSeparators(drive + QStringLiteral("艺术培养\\小小画家\\檬檬爱画画"));
+    QString rule4 = QDir::toNativeSeparators(drive + QStringLiteral("娱乐天地\\动画\\EP01-《星际小蚂蚁》_公益大使_防火安全系列_01_H264高清_1280x720_GE.MP4"));
+    QString rule5 = QDir::toNativeSeparators(drive + QStringLiteral("工具\\伴眠模式"));
+    QString rule6 = QDir::toNativeSeparators(drive + QStringLiteral("工具\\相册"));
     //_logger->info("end adaptRules");
 
 //    _logger->info(rule1);
@@ -145,21 +147,21 @@ bool DevDetector::nativeEvent(const QByteArray &eventType, void *message, long *
                 {
                     //插入u盘
                     QString USBDisk = QString(this->FirstDriveFromMask(lpdbv ->dbcv_unitmask));
-                    _logger->info("USB_Arrived and The USBDisk is: " + USBDisk);
+                    //_logger->info("USB_Arrived and The USBDisk is: " + USBDisk);
                 }
             }
             if(lpdb->dbch_devicetype = DBT_DEVTYP_DEVICEINTERFACE)
             {
                 PDEV_BROADCAST_DEVICEINTERFACE pDevInf  = (PDEV_BROADCAST_DEVICEINTERFACE)lpdb;
                 QString strname = QString::fromWCharArray(pDevInf->dbcc_name,pDevInf->dbcc_size);
-                _logger->info(QString::fromUtf8("插入设备: ") + QString::fromUtf8(strname.toLatin1().data()));
+                //_logger->info(QString::fromUtf8("插入设备: ") + QString::fromUtf8(strname.toLatin1().data()));
 
                 //更新设备
                 checkDev();
             }
             break;
         case DBT_DEVICEREMOVECOMPLETE:
-            _logger->info(QString::fromUtf8("设备移除"));
+            //_logger->info(QString::fromUtf8("设备移除"));
             if(lpdb->dbch_devicetype == DBT_DEVTYP_VOLUME)
             {
                 PDEV_BROADCAST_VOLUME lpdbv = (PDEV_BROADCAST_VOLUME)lpdb;
@@ -171,12 +173,12 @@ bool DevDetector::nativeEvent(const QByteArray &eventType, void *message, long *
             if(lpdb->dbch_devicetype = DBT_DEVTYP_DEVICEINTERFACE)
             {
                 PDEV_BROADCAST_DEVICEINTERFACE pDevInf  = (PDEV_BROADCAST_DEVICEINTERFACE)lpdb;
-                qDebug()<< QString::fromUtf8("移除设备(name)：") << pDevInf->dbcc_name;
+                //qDebug()<< QString::fromUtf8("移除设备(name)：") << pDevInf->dbcc_name;
                 //qDebug()<< "移除设备(guid)：" << pDevInf->dbcc_classguid;
-                qDebug()<< QString::fromUtf8("移除设备(size)：") << pDevInf->dbcc_size;
+                //qDebug()<< QString::fromUtf8("移除设备(size)：") << pDevInf->dbcc_size;
 
-                QString strname = QString::fromWCharArray(pDevInf->dbcc_name,pDevInf->dbcc_size);
-                _logger->info(QString::fromUtf8("移除设备：")+ QString::fromUtf8(strname.toLatin1().data())); //转utf8!!!!!!!!!
+                //QString strname = QString::fromWCharArray(pDevInf->dbcc_name,pDevInf->dbcc_size);
+                //_logger->info(QString::fromUtf8("移除设备：")+ QString::fromUtf8(strname.toLatin1().data())); //转utf8!!!!!!!!!
 
                 //更新设备检查
                 checkDev();
@@ -189,7 +191,7 @@ bool DevDetector::nativeEvent(const QByteArray &eventType, void *message, long *
 }
 
 char DevDetector::FirstDriveFromMask (ULONG unitmask){
-    _logger->info("begin FirstDriveFromMask");
+    //_logger->info("begin FirstDriveFromMask");
     char i;
     for (i = 0; i < 26; ++i)
     {
@@ -197,6 +199,6 @@ char DevDetector::FirstDriveFromMask (ULONG unitmask){
             break;
         unitmask = unitmask >> 1;
     }
-    _logger->info("end FirstDriveFromMask");
+    //_logger->info("end FirstDriveFromMask");
     return (i + 'A');
 }

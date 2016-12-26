@@ -30,7 +30,7 @@
 #include <QFileInfo>
 #include <download/download.h>
 #include "download/status.h"
-#include "backend/logme.h"
+#include "util/logme.h"
 #include "dloader_common.h"
 
 

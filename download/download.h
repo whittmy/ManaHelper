@@ -27,8 +27,8 @@
 #include <QUrl>
 #include <QVector>
 
-#include "datareq/httprequestor.h"
-#include "backend/logme.h"
+#include "util/httprequestor.h"
+#include "util/logme.h"
 #include "download/status.h"
 
 //任务信息
@@ -43,7 +43,33 @@ public:
     bool newDownload(const int ID, const QUrl &url, const QUuid &uuid=QUuid(), const QString &fileName=QString());
 
     void setFile(QFile *file);
-    QFile *file();
+    //QFile *file();
+    bool bfileValid(){
+        return _file!=0;
+    }
+    QString fileName(){
+        if(_file != NULL)
+            return _file->fileName();
+        return QString();
+    }
+
+    void writeFile(QByteArray arr){
+        _file->write(arr);
+    }
+    qint64 getFileSize(){
+        return _file->size();
+    }
+    bool removeFile(){
+        if(_file == NULL)
+            return true;
+        return _file->remove();
+    }
+
+    QString errString(){
+        if(_file == NULL)
+            return QString();
+        return _file->errorString();
+    }
 
     void setUrl(const QUrl &url);
     QUrl url() const;
@@ -74,16 +100,21 @@ public:
 
 public:
     QUrl getCurSegUrl();
+    void setCurSegUrl(QUrl url);
     int getCurSegIdx();
     int getSegCnt();
     void doNextSeg(); //含当前段的证明，段号的递增等工作
     bool bSegEnd();
+    void closeFile();
 
+    QNetworkReply::NetworkError errorCode();
+    QString errorStr();
 
 signals:
     void sig_onTaskAdded(Download* download);
-private slots:
-    void slot_onHttpReqFinished(QString result, PtrRequestInfo info);
+public slots:
+    void slot_onHttpReqFinished(QString result);
+    void slot_httpError(QNetworkReply::NetworkError err, QString str);
 
 private:
 
@@ -104,6 +135,8 @@ private:
     QUrl _urlRedirectedTo;
 
     LogMe *_logger;
+    QNetworkReply::NetworkError _error;
+    QString _lastError;
 
 };
 

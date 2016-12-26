@@ -41,11 +41,12 @@ public:
 
     enum DownloadStatus{
         Idle,
-        Starting,
-        Downloading,
-        WaitTrans, //下载完成&&转换完成&&存储完成
         Failed,
         Paused,
+        Starting,
+        Downloading,
+        WaitCombine, //下载完成等待合并
+        WaitTrans, //等待转码
         Transing,//转换中
         Storing, //正在存储
         Finished //真正完成

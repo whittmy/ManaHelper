@@ -22,14 +22,16 @@
 #include <QFileInfo>
 #include <QDir>
 #include "util/paths.h"
-#include "datareq/xml_parser_playurl.h"
+#include "util/xml_parser_playurl.h"
 
 //“下载任务” 类
 Download::Download(QObject *parent):
     QObject(parent),_logger(new LogMe(this))
 {
+    slot_httpError(QNetworkReply::NoError, "");
+
     mHttp = new HttpRequestor();
-    connect(mHttp, SIGNAL(sig_onFinished(QString, PtrRequestInfo)), this, SLOT(slot_onHttpReqFinished(QString, PtrRequestInfo)));
+    connect(mHttp, SIGNAL(sig_onFinished(QString)), this, SLOT(slot_onHttpReqFinished(QString)));
 }
 
 Download::~Download(){
@@ -41,9 +43,7 @@ Download::~Download(){
 //下载中的文件名是加上".download"来标识，下载完成后，需自动更名。
 bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, const QString &fileName)
 {
-    _logger->debug(fileName);
-    _logger->info(QString("Initializing new download: %1").arg(url.toString()));
-
+    _logger->info(QString("newDownload: %1").arg(url.toString()));
 
     setUuid(uuid);
     setUrl(url); //该url为总url， 下载细节以分段url为准
@@ -58,9 +58,10 @@ bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, con
         fileNewName = fileInfo.fileName();
     }
 
-    fileNewName += ".mp4";      //!!不考虑传入的文件名带扩展名
+   // fileNewName += ".mp4";      //!!不考虑传入的文件名带扩展名??? 其它类型的资源呢？？？
+
     this->setName(fileNewName);
-    this->setPath("D:\\"); //设置目的路径， 除了最终的转存外，其余使用的都是 缓存路径。
+    this->setPath("C:\\"); //设置目的路径， 除了最终的转存外，其余使用的都是 缓存路径。
     //++++++++++++++++++++++++++++++++++++++++++
     //++++++++++++++++++++++++++++++++++++++++++
 
@@ -70,30 +71,38 @@ bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, con
     bool isOpened = false;
 
     QString fileWithPath = QString(Paths::cacheDirPath()).append(fileNewName);
-    _logger->info(QString("FileName: [%1]| FileWithPath: [%2]").arg(fileNewName, fileWithPath));
+    _logger->info(QString("FileNewName: [%1]| FileWithPath: [%2]").arg(fileNewName, fileWithPath));
 
     if (QFile::exists(fileWithPath)) {
         //已完成 (因为正常是带 .download或分段编号的)
+        _logger->info("file is complete, set WaitCombine, and mCurSegIdx is 1");
+
         this->setFile(new QFile(fileWithPath));
 
         //下载状态是完成的，等待转码转存
-        _status->setDownloadStatus(Status::DownloadStatus::WaitTrans);
+        _status->setDownloadStatus(Status::DownloadStatus::WaitCombine);
 
         //已完成的任务， 设定其只有一个段(即便其下载时有多段)，
         //设置段号为1,(1>=cnt)说明已结束
         mCurSegIdx = 1;
     }
     else{
+        _logger->info("file is downloading-status");
         //开始识别下载状态！！！
         bool newTask = false;
         QDir dir(Paths::cacheDirPath());
         //按名字逆序排列，获取最后一个片段的状态(片段是一个接一个按顺序下载，一个完成后才进行下一个片段)
-        QFileInfoList flist = dir.entryInfoList( QStringList()<< fileNewName,
+        QFileInfoList flist = dir.entryInfoList( QStringList()<< fileNewName+"*",
                                                  QDir::Files, QDir::Name|QDir::Reversed);
+        foreach(QFileInfo p, flist){
+            _logger->info("filter-file:"+p.fileName());
+        }
+
+
         foreach(QFileInfo fi, flist){
             //仅判断第一个(也即最后一个) 即可
             QString name = fi.fileName();
-            int pos = name.indexOf("_mmh\d{3}");
+            int pos = name.indexOf(QRegExp("_mmh[0-9]{3}"));
 
             if(name.endsWith(".download")){
                 //当前段正在下载
@@ -103,15 +112,18 @@ bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, con
                 isOpened = _file->open(QIODevice::Append);
 
                 _status->setDownloadMode(Status::ResumeDownload);
+                _logger->info(QString("find the .download file, name=%1，get-segIdx=%2, append-mode").arg(name).arg(mCurSegIdx));
              }
-            else if(name.indexOf(QRegExp("_mmh\d{3}")) > 0){
+             else if(pos >= 0){
                 //当前段已下载完成，准备新的开始(不管有没有新的段)
                 mCurSegIdx = name.mid(pos+4, 3).toInt()+1;
 
-                this->setFile(new QFile(fi.absoluteFilePath()+QString::asprintf("_mmh%03d.download").arg(mCurSegIdx))); //_mmhXXX.download
+                this->setFile(new QFile(fileWithPath+QString::asprintf("_mmh%03d.download", mCurSegIdx))); //_mmhXXX.download
                 isOpened = _file->open(QIODevice::WriteOnly);
 
                 _status->setDownloadMode(Status::ResumeDownload);
+                _logger->info(QString("find the .download file, name=%1，get-segIdx=%2, newfile-mode").arg(name).arg(mCurSegIdx));
+
              }
             else{
                 //没有段下载
@@ -123,11 +135,12 @@ bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, con
         //如果还没有开始
         if(newTask || flist.size()==0){
             mCurSegIdx = 0;
-
             this->setFile(new QFile(fileWithPath+"_mmh000.download"));
             isOpened = _file->open(QIODevice::WriteOnly);
 
             _status->setDownloadMode(Status::NewDownload);
+            _logger->info("had no seg-downloaded, we new it: "+ fileWithPath+"_mmh000.download");
+
         }
 
         //打开失败，
@@ -137,8 +150,12 @@ bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, con
             _file = 0;
             return false;
         }
+        else{
+            _logger->info("open file successfully");
+        }
         this->setCreated(QDateTime::currentDateTime());
     }
+
 
     //预处理url
     preTreatment();
@@ -153,54 +170,70 @@ bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, con
 // ....
 //                                                                    || >>>> filename.mp4
 void Download::preTreatment(){
+    _logger->info("preTreatment");
     mSegUrls.clear();
 
-    PtrRequestInfo info = new RequestInfo;
-    if(_url.toString().contains("url=") || _status->downloadStatus()< Status::WaitTrans){
+    RequestInfo *info = new RequestInfo();
+    if(_url.toString().contains("url=") || _status->downloadStatus()== Status::WaitCombine){
         //parser ==> slot
         info->url = _url.toString();
-        mHttp->addTask(info);
+        _logger->info("begin to addTask of http for :"+info->url);
+        mHttp->addTask(info); //请求完，会触发slot_onHttpReqFinished
     }
     else{
+        //不牵涉到网络请求解析，直接调用 slot_onHttpReqFinished
+        _logger->info("direct to slot_onHttpReqFinished fro url:"+_url.toString());
         mSegUrls.append(_url);
-        slot_onHttpReqFinished("", info);
+        slot_onHttpReqFinished("");
     }
 }
 
 //解析分段url完成，开始发送通知：Download已添加完成
-void Download::slot_onHttpReqFinished(QString rslt, PtrRequestInfo info){
+void Download::slot_onHttpReqFinished(QString rslt){
+    _logger->info("slot_onHttpReqFinished enter --rslt:"+rslt);
     if(!rslt.isEmpty()){
         Xml_Parser_Playurl xmlparser(rslt);
         xmlparser.parser();
         QStringList list = xmlparser.getFiles();
         foreach(QString url ,list){
+            _logger->info("append seg-url:"+url);
             mSegUrls.append(QUrl(url));
         }
     }
-    if(info != NULL)
-        delete info;
+
 
     //编号已到结尾的，说明全部已处理完了。
-    if(mCurSegIdx >= getSegCnt()){
-        _status->setDownloadStatus(Status::WaitTrans);
+     _logger->info(QString("cursegidx=%1,sum=%2").arg(mCurSegIdx).arg(getSegCnt()));
+    if(mCurSegIdx >= getSegCnt() && getSegCnt()>0){
+        _status->setDownloadStatus(Status::WaitCombine);
+        _logger->info("had  === Status::WaitCombine");
     }
+
 
     //通知，任务已添加成功
     emit sig_onTaskAdded(this);
 }
 
+void Download::closeFile(){
+    _logger->info("closeFile");
+    if(_file != NULL){
+        _file->flush();
+        _file->close();
+    }
+}
 
 void Download::setFile(QFile *file)
 {
-    if(_file != NULL)
+    if(_file != NULL){
         delete _file;
+    }
     _file = file;
 }
 
-QFile *Download::file()
-{
-    return _file;
-}
+//QFile *Download::file()
+//{
+//    return _file;
+//}
 
 void Download::setUrl(const QUrl &url)
 {
@@ -296,6 +329,10 @@ QUrl Download::getCurSegUrl(){
         return mSegUrls.at(mCurSegIdx);
     return QUrl();
 }
+void Download::setCurSegUrl(QUrl url){
+    if(mCurSegIdx < getSegCnt())
+        mSegUrls.replace(mCurSegIdx, url);
+}
 
 int Download::getCurSegIdx(){
     return mCurSegIdx;
@@ -311,24 +348,43 @@ bool Download::bSegEnd(){
 
 void Download::doNextSeg(){
     //1. 对当前已完成的文件正名
+    _logger->info("enter doNextSeg--->>>>");
     if(_file->fileName().endsWith(".download")){
-//        if(_status->bytesSegTotal()>0 && _status->progressSeg()==100){
-//            _file->rename(_file->fileName().left(_file->fileName().length()-QString(".download").length()));
-//        }
-        _file->flush();
+        _logger->info("rename -- delete .download ");
         _file->rename(_file->fileName().left(_file->fileName().length()-QString(".download").length()));
-        _file->close();
+        closeFile();
         setFile(0);
+        _logger->info("rename ok, and setFile Null");
     }
 
     //2.递增段号
     mCurSegIdx++;
+    if(mCurSegIdx >= getSegCnt())
+        return;
 
     //3.设置File, 以便下载上
-    QString fileWithPath =  QString::asprintf("%s_mmh%03d.download", QString(Paths::cacheDirPath()).append(_name),mCurSegIdx);
+    QString fileWithPath =  QString::asprintf("%s_mmh%03d.download",
+                                              QString(Paths::cacheDirPath()).append(_name).toStdString().c_str(),
+                                              mCurSegIdx);
+    _logger->info("begin set new File:"+fileWithPath);
     this->setFile(new QFile(fileWithPath)); //_mmhXXX.download
     if(!_file->open(QIODevice::WriteOnly)){
          _logger->error(QString("Couldn't open file for '%1', adding new download aborted").arg(fileWithPath));
         setFile(0);
     }
+    _logger->info("had open the new file, and leave<<<<");
+}
+
+
+void Download::slot_httpError(QNetworkReply::NetworkError err, QString str){
+    _error = err;
+    _lastError = str;
+}
+
+QNetworkReply::NetworkError Download::errorCode(){
+    return _error;
+}
+
+QString Download::errorStr(){
+    return _lastError;
 }

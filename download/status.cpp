@@ -25,7 +25,7 @@
 Status::Status(QObject *parent) :
     QObject(parent)
 {
-    startTime();
+     startTime();
 }
 
 QString Status::remainingTime() const
@@ -95,8 +95,8 @@ QString Status::transDownLoadString(int status){
         return "Starting";
     case Downloading:
         return "Downloading";
-    case WaitTrans:
-        return "Finished";
+    case WaitCombine:
+        return "Combining";
     case Failed:
         return "Failed";
     case Paused:
