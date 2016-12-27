@@ -54,7 +54,6 @@ SOURCES += \
     download/downloadpropertydialog.cpp \
     download/downloadingprogressdialog.cpp \
     download/downloadfinisheddialog.cpp \
-    download/adddownloaddialog.cpp \
     download/networkaccessmanager.cpp \
     download/autosaver.cpp \
     download/download.cpp \
@@ -74,8 +73,8 @@ SOURCES += \
     util/httprequestor.cpp \
     util/xml_parser_upgrade.cpp \
     util/xml_parser_playurl.cpp \
-    download/mainwindow.cpp  \
-    main.cpp
+    main.cpp \
+    download/downloadui.cpp
 
 
 
@@ -108,7 +107,6 @@ HEADERS  += \
     download/downloadpropertydialog.h \
     download/downloadingprogressdialog.h \
     download/downloadfinisheddialog.h \
-    download/adddownloaddialog.h \
     download/networkaccessmanager.h \
     download/autosaver.h \
     download/ui_proxy.h \
@@ -132,9 +130,9 @@ HEADERS  += \
     util/xml_parser_playurl.h \
     util/xml_parser_upgrade.h \
     systemtrayicon.h \
-    download/mainwindow.h
+    download/downloadui.h
 
-
+UI_DIR= UI
 
 FORMS    += \
     #---------- browser ------
@@ -148,17 +146,16 @@ FORMS    += \
     webbrowser/passworddialog.ui \
     webbrowser/proxy.ui \
     webbrowser/settings.ui  \
-    download/mainwindow.ui \
     download/optionsdialog.ui \
     download/newdownloadinfodialog.ui \
     download/downloadpropertydialog.ui \
     download/downloadingprogressdialog.ui \
     download/downloadfinisheddialog.ui \
-    download/adddownloaddialog.ui \
     download/proxy.ui \
     download/passworddialog.ui \
     download/devmanagerdialog.ui \
-    download/upgradetipdialog.ui
+    download/upgradetipdialog.ui \
+    download/downloadui.ui
 
 # browser-res
 RESOURCES += data/data.qrc htmls/htmls.qrc

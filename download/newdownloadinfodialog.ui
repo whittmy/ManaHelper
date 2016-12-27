@@ -126,7 +126,7 @@
         <widget class="QComboBox" name="categoryBox">
          <property name="minimumSize">
           <size>
-           <width>71</width>
+           <width>181</width>
            <height>27</height>
           </size>
          </property>
@@ -138,56 +138,137 @@
          </property>
          <item>
           <property name="text">
-           <string>General</string>
-          </property>
-          <property name="icon">
-           <iconset resource="../images.qrc">
-            <normaloff>:/categories/images/prio_0.png</normaloff>:/categories/images/prio_0.png</iconset>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Compressed</string>
-          </property>
-          <property name="icon">
-           <iconset resource="../images.qrc">
-            <normaloff>:/categories/images/archive.png</normaloff>:/categories/images/archive.png</iconset>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Documents</string>
-          </property>
-          <property name="icon">
-           <iconset resource="../images.qrc">
-            <normaloff>:/categories/images/document.png</normaloff>:/categories/images/document.png</iconset>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Music</string>
-          </property>
-          <property name="icon">
-           <iconset resource="../images.qrc">
-            <normaloff>:/categories/images/audio.png</normaloff>:/categories/images/audio.png</iconset>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Programs</string>
-          </property>
-          <property name="icon">
-           <iconset resource="../images.qrc">
-            <normaloff>:/categories/images/downloadmanagment.png</normaloff>:/categories/images/downloadmanagment.png</iconset>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Video</string>
+           <string>drawcourse</string>
           </property>
           <property name="icon">
            <iconset resource="../images.qrc">
             <normaloff>:/categories/images/video.png</normaloff>:/categories/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>classic baby</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/categories/images/video.png</normaloff>:/categories/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>pop baby</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/files/images/video.png</normaloff>:/files/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>pop music</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/files/images/video.png</normaloff>:/files/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>happy dance </string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/categories/images/video.png</normaloff>:/categories/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>do it</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/categories/images/video.png</normaloff>:/categories/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>guo xue qi meng</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/categories/images/video.png</normaloff>:/categories/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>cheng yu gu shi</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/categories/images/video.png</normaloff>:/categories/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>shu li luo ji</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/files/images/video.png</normaloff>:/files/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>bai ke zhi shi</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/files/images/video.png</normaloff>:/files/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>tang shi song ci</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/files/images/video.png</normaloff>:/files/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>dong hua pian</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/files/images/video.png</normaloff>:/files/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>shi pin er ge</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/files/images/video.png</normaloff>:/files/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>shi pin gu shi</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/files/images/video.png</normaloff>:/files/images/video.png</iconset>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>shi pin ying yu</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../images.qrc">
+            <normaloff>:/files/images/video.png</normaloff>:/files/images/video.png</iconset>
           </property>
          </item>
         </widget>

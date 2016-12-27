@@ -235,20 +235,25 @@ void DLoader_common::doRemove(const QUuid &uuid)
 void DLoader_common::slot_replyMetaDataChanged(QObject *currentReply)
 {
     QHash<QNetworkReply*, Download*>::iterator i = _downloadHash->find(qobject_cast<QNetworkReply*>(currentReply));
-
     QNetworkReply *reply = i.key();
-    Status *status = _statusHash->find(reply->url()).value();
 
-    //文件大小计算1次即可，多段的计算比较粗略， 第一段大小乘以段数
-    //为避免总大小经常变化,再恢复下载时，最后传入文件总大小
     qint64 size = reply->header(QNetworkRequest::ContentLengthHeader).toULongLong();
+    if(size == 0)
+        return;
     _logger->info(QString("enter - slot_replyMetaDataChanged, size=%1").arg(size));
 
-    if(status->bytesTotal() == 0){
-        status->setBytesTotal(size * i.value()->getSegCnt());
+    Status *status = _statusHash->find(reply->url()).value();
+    Download *download = i.value();
+
+    status->setSegInfo(download->getCurSegIdx(), download->getSegCnt());
+
+    //文件总大小为粗略计算(第一段的大小*段数)，仅作显示用,不参与任何计算。
+    if(status->bytesTotal() == 0 && download->getCurSegIdx()==0){
+        status->setBytesTotal(size * download->getSegCnt());
     }
 
     //对于当前段的大小，还是要设置的,便于统计当前段的进度
+    //进度计算比较粗略，按照 段号-段数以及当前段的进度来计算,详见Status;
     status->setBytesSegTotal(size);
 }
 
@@ -275,7 +280,6 @@ void DLoader_common::slot_httpReadyRead(QObject *currentReply)
 //当强制中断网络连接时，也会触发该槽对应的信号
 void DLoader_common::slot_httpFinished(QObject *currentReply)
 {
-    _logger->debug("slot_httpFinished");
     if(typeid(*currentReply) == typeid(Download)){
         //已完成
         Download *dl = qobject_cast<Download*>(currentReply);
@@ -287,9 +291,11 @@ void DLoader_common::slot_httpFinished(QObject *currentReply)
     QHash<QNetworkReply*, Download*>::iterator i = _downloadHash->find(qobject_cast<QNetworkReply*>(currentReply));
     if(i == _downloadHash->end()){
         //here Caution!!!, very important
-        _logger->info("had found no this reply, returned");
+        //_logger->info("had found no this reply, returned");
         return;
     }
+
+    _logger->debug("slot_httpFinished");
 
     Download *download = i.value();
     QNetworkReply *reply = i.key();
@@ -307,11 +313,8 @@ void DLoader_common::slot_httpFinished(QObject *currentReply)
 
         //重新开始
         this->doStart(download);
-
-
-         return;
+        return;
     }
-
 
     /*
      * We weren't redirected anymore
@@ -328,12 +331,10 @@ void DLoader_common::slot_httpFinished(QObject *currentReply)
         //i.key()->deleteLater();
         //freeReplyInfo(reply);    //完全释放
 
-
         //继续开始新段下载
         doStart(download);
         return;
     }
-
 
     //暂停等
     _logger->info("maybe pause!!!");

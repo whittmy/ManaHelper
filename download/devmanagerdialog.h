@@ -33,7 +33,8 @@ private slots:
 
 private:
     Ui::DevManagerDialog *ui;
-    QMap<QString, QIcon> m_publicIconMap ;
+    QMap<int, QIcon> m_publicIconMap ;
+    QMap<QString, int> mExtMap;
     LogMe *_logger;
     MyTreeView *_treeView_dir;
 };

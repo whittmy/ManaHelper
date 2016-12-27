@@ -1,5 +1,6 @@
-﻿#include "download/downloadpropertydialog.h"
-#include "download/ui_downloadpropertydialog.h"
+﻿#include "ui_downloadpropertydialog.h"
+#include "download/downloadpropertydialog.h"
+
 #include <QDataWidgetMapper>
 DownloadPropertyDialog::DownloadPropertyDialog(QWidget *parent) :
     QDialog(parent),

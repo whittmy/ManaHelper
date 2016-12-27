@@ -1,5 +1,6 @@
 ﻿#ifndef NEWDOWNLOADINFODIALOG_H
 #define NEWDOWNLOADINFODIALOG_H
+#include "ui_newdownloadinfodialog.h"
 
 #include <QDialog>
 #include <download/modeldownloads.h>

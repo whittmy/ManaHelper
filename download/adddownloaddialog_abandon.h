@@ -11,13 +11,13 @@ namespace Ui {
 class AddDownloadDialog;
 }
 
-class AddDownloadDialog : public QDialog
+class AddDownloadDialog_abandon : public QDialog
 {
     Q_OBJECT
     
 public:
-    explicit AddDownloadDialog(QWidget *parent = 0);
-    ~AddDownloadDialog();
+    explicit AddDownloadDialog_abandon(QWidget *parent = 0);
+    ~AddDownloadDialog_abandon();
     void setUrl(QString url);
     void setLocalModel(modelDownloads *);
     void setDownLoader(DownLoader *dl);

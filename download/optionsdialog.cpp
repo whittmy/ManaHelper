@@ -1,5 +1,5 @@
 ﻿#include "download/optionsdialog.h"
-#include "download/ui_optionsdialog.h"
+#include "ui_optionsdialog.h"
 #include <QFileDialog>
 #include <QString>
 #include <QSettings>
@@ -86,7 +86,7 @@ void OptionsDialog::on_pushButton_4_clicked()
 
 void OptionsDialog::readSettings()
 {
-    QSettings settings(this);
+    QSettings settings;
     //general start
     int maxRunningDownloads= settings.value("maxRunningDownloads").toInt();
     ui->maxTasksSpinBox->setValue(maxRunningDownloads);
@@ -158,7 +158,7 @@ void OptionsDialog::readSettings()
 
 void OptionsDialog::writeSettings()
 {
-    QSettings settings(this);
+    QSettings settings;
     //general start
     settings.setValue("maxRunningDownloads",ui->maxTasksSpinBox->value());
     settings.setValue("ConnectionsPerDownload",ui->ConnectionsPerDownloadSpinBox->value());

@@ -1,8 +1,7 @@
 ﻿#include "networkaccessmanager.h"
-
-#include "mainwindow.h"
 #include "ui_passworddialog.h"
 #include "ui_proxy.h"
+#include "downloadui.h"
 
 #include <QtCore/QSettings>
 
@@ -121,7 +120,7 @@ void NetworkAccessManager::authenticationRequired(QNetworkReply *reply, QAuthent
     }
 }
 
-void NetworkAccessManager::setMainWindow(MainWindow *mow){
+void NetworkAccessManager::setMainWindow(DownLoadUI *mow){
     mw = mow;
 }
 

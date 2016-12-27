@@ -50,7 +50,6 @@
 #include "settings.h"
 #include "tabwidget.h"
 #include "toolbarsearch.h"
-#include "ui_passworddialog.h"
 #include "webview.h"
 
 #include <QtCore/QSettings>
@@ -72,7 +71,8 @@
 #include <QWebEngineSettings>
 
 #include <QtCore/QDebug>
-#include "download/mainwindow.h"
+#include "download/downloadui.h"
+#include "download/newdownloadinfodialog.h"
 
 template<typename Arg, typename R, typename C>
 struct InvokeWrapper {
@@ -103,6 +103,7 @@ BrowserMainWindow::BrowserMainWindow(QWidget *parent, Qt::WindowFlags flags)
     ,mSiteParser(new SiteParser())
     ,_logger(new LogMe(this))
     ,_devdetector(new DevDetector((HANDLE)this->winId(), this))
+    ,mDevDlg(new DevManagerDialog(this))
 {
     setToolButtonStyle(Qt::ToolButtonFollowStyle);
     setAttribute(Qt::WA_DeleteOnClose, true);
@@ -238,18 +239,26 @@ void BrowserMainWindow::slotAddTask(){
     if(currentTab() == NULL)
         return;
 
-    QString url = currentTab()->url().toString();
+    QString url = "http://localhost/test/Yunflv/url.php?url=" + currentTab()->url().toString();
 
     qDebug()<<"slotAddTask:"<<url;
-    QMessageBox::warning(this,"add url", url);
+    //QMessageBox::warning(this,"add url", url);
+
+    url = "http://localhost/test/Yunflv/url.php?url=http://tv.sohu.com/20140708/n401968741.shtml";
+
+//    NewDownloadInfoDialog *newDownloadUi = new NewDownloadInfoDialog(this, url);
+//    newDownloadUi->show();
+//    newDownloadUi->setLocalModel(localmodel);
+//    newDownloadUi->setDownLoader(mDownLoader);
+    //destroy(this);
 }
 
 void BrowserMainWindow::slotDownLoadUI(){
    // QMessageBox::warning(this, "download", "ui");
-    MainWindow w;
-    w.resize(800, 600);
-    w.move(200,100);
-    w.show();
+    DownLoadUI *w = new DownLoadUI(this);
+    w->resize(800, 600);
+    w->move(200,100);
+    w->show();
 }
 
 
@@ -293,7 +302,11 @@ bool BrowserMainWindow::nativeEvent(const QByteArray &eventType, void *message, 
 }
 
 
-
+void BrowserMainWindow::slotOpenDevice(){
+    DevManagerDialog *dlg = new DevManagerDialog(this);
+    if(mDevDlg->isHidden())
+        mDevDlg->show();
+}
 
 
 
@@ -707,6 +720,7 @@ void BrowserMainWindow::setupToolBar()
     m_deviceIcon = QIcon(QLatin1String(":device.png"));
     m_device->setIcon(m_deviceIcon);
     m_navigationBar->addAction(m_device);
+    connect(m_device, SIGNAL(triggered()), this, SLOT(slotOpenDevice()));
     //<<<
 
     //luokui  placeholder

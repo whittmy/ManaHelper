@@ -1,5 +1,4 @@
-﻿#include "mainwindow.h"
-#include "ui_mainwindow.h"
+﻿#include "downloadui.h"
 #include "download/downloadconstants.h"
 #include <QDesktopWidget>
 #include "download/devmanagerdialog.h"
@@ -13,16 +12,16 @@ extern QString gUrlArr[];
 //<<<<
 
 
-MainWindow::MainWindow(QWidget *parent) :
+DownLoadUI::DownLoadUI(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow),
+    ui(new Ui::DownLoadUI),
     _logger(new LogMe(this)),
    mDownLoader(new DownLoader())
 {
     ui->setupUi(this);
 
 
-    MainWindow::dbMan = new DownloadsDBManager();
+    DownLoadUI::dbMan = new DownloadsDBManager();
     checkFirstRun();
     readSettings();
     model = new modelDownloads(this,dbMan->db);
@@ -73,7 +72,7 @@ MainWindow::MainWindow(QWidget *parent) :
 }
 
 
-MainWindow::~MainWindow()
+DownLoadUI::~DownLoadUI()
 {
     delete ui;
     delete _logger;
@@ -84,7 +83,7 @@ MainWindow::~MainWindow()
 
 
 
-void MainWindow::doUpdateChk(){
+void DownLoadUI::doUpdateChk(){
 //    HttpRequestor* request = HttpRequestor::Instance();
 //    RequestInfo* info = new RequestInfo();
 //    info->url = gUrlArr[UPGRADE_SELF];
@@ -93,7 +92,7 @@ void MainWindow::doUpdateChk(){
 //    request->addTask(info);
 }
 
-void MainWindow::ReqUgradeResult(REQ_TYPE type, QString str){
+void DownLoadUI::ReqUgradeResult(REQ_TYPE type, QString str){
     qDebug() << "----------- ReqUgradeResult ----------";
 
     Xml_Parser_Upgrade *dp = new Xml_Parser_Upgrade(str);
@@ -119,7 +118,7 @@ void MainWindow::ReqUgradeResult(REQ_TYPE type, QString str){
 
 //action_Add
 // setUrl, setLocalModel
-void MainWindow::on_actionAdd_New_triggered()
+void DownLoadUI::on_actionAdd_New_triggered()
 {
     _logger->debug("on_actionAdd_New_triggered");
     //Get Url from clipboard
@@ -132,26 +131,23 @@ void MainWindow::on_actionAdd_New_triggered()
           {
               // do something with the url
               _logger->info(QString("open dlg for url:%").arg(url.toDisplayString()));
-              AddDownloadDialog *addDownloadUi = new AddDownloadDialog(this);
-              addDownloadUi->setUrl(url.toDisplayString()); //返回可读的url串，QUrl为数据结构
-              addDownloadUi->setLocalModel(model); //设置 modelDownloads
-              addDownloadUi->setDownLoader(mDownLoader);
-              addDownloadUi->show();
+              openAddTaskDlg(url.toDisplayString());
           }
       }else{
         // 若单一url(也未必是url)
-          AddDownloadDialog *addDownloadUi = new AddDownloadDialog(this);
-          QUrl rl = QUrl::fromUserInput(clipboard->text());
-          addDownloadUi->setUrl(rl.toDisplayString());
-          _logger->info(QString("open dlg for single url:%").arg(rl.toDisplayString()));
-          addDownloadUi->setLocalModel(model);
-          addDownloadUi->setDownLoader(mDownLoader);
-          addDownloadUi->show();
+          openAddTaskDlg(QUrl::fromUserInput(clipboard->text()).toDisplayString());
       }
 }
 
+void DownLoadUI::openAddTaskDlg(QString url){
+    NewDownloadInfoDialog *newDownloadUi = new NewDownloadInfoDialog(this,url);
+    newDownloadUi->setLocalModel(model);
+    newDownloadUi->setDownLoader(mDownLoader);
+    newDownloadUi->show();
+}
+
 //退出按钮，选择确认
-void MainWindow::on_actionQuit_triggered()
+void DownLoadUI::on_actionQuit_triggered()
 {
     _logger->debug("on_actionQuit_triggered");
     int reply = QMessageBox::warning(this,"Confirm","Are you sure you want to quit?",QMessageBox::Yes,QMessageBox::No);
@@ -162,7 +158,7 @@ void MainWindow::on_actionQuit_triggered()
 }
 
 //两个事儿， 托盘图标 及其 菜单定义
-int MainWindow::CreateSystemTrayIcon(){
+int DownLoadUI::CreateSystemTrayIcon(){
     _logger->debug("CreateSystemTrayIcon");
     QAction *ShowHideAction = new QAction("Show/Hide Interface",this);
     connect(ShowHideAction, SIGNAL(triggered()), this, SLOT(ShowHideInterface()));
@@ -202,7 +198,7 @@ int MainWindow::CreateSystemTrayIcon(){
 }
 
 //显示/隐藏主界面
-int MainWindow::ShowHideInterface(){
+int DownLoadUI::ShowHideInterface(){
     _logger->debug("ShowHideInterface");
     if(isHidden()){
         show();
@@ -213,7 +209,7 @@ int MainWindow::ShowHideInterface(){
 }
 
 //托盘图标的处理方式(槽)
-int MainWindow::TrayIconActivated(QSystemTrayIcon::ActivationReason reason){
+int DownLoadUI::TrayIconActivated(QSystemTrayIcon::ActivationReason reason){
     _logger->debug(QString("TrayIconActivated,reason=%1").arg(reason));
     switch (reason){
         case QSystemTrayIcon::Trigger: //click
@@ -239,10 +235,10 @@ int MainWindow::TrayIconActivated(QSystemTrayIcon::ActivationReason reason){
 
 
 //读取窗口大小，并设置窗口大小位置
-void MainWindow::readSettings()
+void DownLoadUI::readSettings()
 {
     _logger->debug("readSettings");
-    QSettings settings(this);
+    QSettings settings;
     QPoint pos = settings.value("pos", QPoint(200, 200)).toPoint();
     QSize size = settings.value("size", QSize(400, 400)).toSize();
     resize(size);
@@ -251,17 +247,17 @@ void MainWindow::readSettings()
 }
 
 //保存窗口相关参数
-void MainWindow::writeSettings(){
+void DownLoadUI::writeSettings(){
     _logger->debug("writeSettings");
-    QSettings settings(this);
+    QSettings settings;
     settings.setValue("pos", pos());
     settings.setValue("size", size());
 }
 
 //设置项的默认参数设置
-void MainWindow::setDefaultSettings(){
+void DownLoadUI::setDefaultSettings(){
     _logger->debug("setDefaultSettings");
-    QSettings settings(this);
+    QSettings settings;
 
     //general start
     settings.setValue("maxRunningDownloads",4);
@@ -323,14 +319,15 @@ void MainWindow::setDefaultSettings(){
 
 //首次运行会 创建一系列目录， QDir::home()/Downloads/xx
 //!!!!
-void MainWindow::checkFirstRun(){
+void DownLoadUI::checkFirstRun(){
     _logger->debug("checkFirstRun");
     //关于QSettings, window系统默认存注册表,  HKEY_CURRENT_USER\Software\orgname\appname
-    QSettings settings(this);
+    QSettings settings;
 
     //如果首次运行，firstRun为true
     bool firstRun = settings.value("firstRun",true).toBool();
     if(firstRun || !dbMan->isDbValid()){
+        _logger->debug("-=-=-= is first run -=-=-");
         QDir defaultLocation = QDir::home();
         if(!defaultLocation.cd("Downloads")){
             defaultLocation.mkdir("Downloads");
@@ -366,14 +363,14 @@ void MainWindow::checkFirstRun(){
 }
 
 //选项对话框(非模态，可以同时打开多个)
-void MainWindow::on_actionOptions_triggered()
+void DownLoadUI::on_actionOptions_triggered()
 {
     _logger->debug("on_actionOptions_triggered");
     OptionsDialog *optionsUi = new OptionsDialog;
     optionsUi->show();
 }
 
-void MainWindow::on_actionStop_Download_triggered(){
+void DownLoadUI::on_actionStop_Download_triggered(){
     _logger->debug("on_actionStop_Download_triggered");
     selectionModel= ui->DownloadsTable->selectionModel();//QItemSelectionModel, 返回当前选择的model
     QModelIndexList indexes = selectionModel->selectedRows(); //获取当前选择行的的model’index的列表， QModelIndexList
@@ -386,7 +383,7 @@ void MainWindow::on_actionStop_Download_triggered(){
 
 
 //左侧分类item选中变化联动实现，实际就是操作model的过程，数据变化带动
-void MainWindow::on_categoriesTree_itemSelectionChanged(){
+void DownLoadUI::on_categoriesTree_itemSelectionChanged(){
     _logger->debug("on_categoriesTree_itemSelectionChanged");
     int statusCat=-1; //parent-cata-idx
     int typeCat=-1; // child-cata-idx
@@ -467,7 +464,7 @@ void MainWindow::on_categoriesTree_itemSelectionChanged(){
 
 //这在启动时执行，监听待添加的url，
 //感觉该函数类似于一个客户端。>>>>>>>>
-int MainWindow::StartListeningForAddUrl(){
+int DownLoadUI::StartListeningForAddUrl(){
     _logger->debug("StartListeningForAddUrl");
     udpSocket = new QUdpSocket();
     udpSocket->bind(QHostAddress::LocalHost,45454);
@@ -475,7 +472,7 @@ int MainWindow::StartListeningForAddUrl(){
     return 0;
 }
 
-int MainWindow::ReadUrlAndProcess(){
+int DownLoadUI::ReadUrlAndProcess(){
     _logger->debug("ReadUrlAndProcess");
     QByteArray datagram;
     while(udpSocket->hasPendingDatagrams()){
@@ -489,7 +486,7 @@ int MainWindow::ReadUrlAndProcess(){
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 //弹出对话框设置url下载信息，非模态
-int MainWindow::AddUrlToAddDialog(QString Url){
+int DownLoadUI::AddUrlToAddDialog(QString Url){
     _logger->debug("AddUrlToAddDialog");
     NewDownloadInfoDialog *newDownloadUi = new NewDownloadInfoDialog(0,Url);
     newDownloadUi->setLocalModel(model);
@@ -498,7 +495,7 @@ int MainWindow::AddUrlToAddDialog(QString Url){
 }
 
 // 主要依据选中的条目，更新界面上工具栏的按钮状态。
-int MainWindow::UpdateInterface(){
+int DownLoadUI::UpdateInterface(){
     _logger->debug("UpdateInterface");
     ui->DownloadsTable->resizeColumnsToContents();
     selectionModel= ui->DownloadsTable->selectionModel();//QItemSelectionModel, 返回当前选择的model
@@ -547,7 +544,7 @@ int MainWindow::UpdateInterface(){
 }
 
 //条目属性按钮动作-弹出详细信息
-void MainWindow::on_actionProperties_triggered()
+void DownLoadUI::on_actionProperties_triggered()
 {
     _logger->debug("on_actionProperties_triggered");
     // 1. 获取QTableView的QSelectModel
@@ -570,7 +567,7 @@ void MainWindow::on_actionProperties_triggered()
 }
 
 //下载按钮，多选的记录就都开始下载
-void MainWindow::on_actionDownload_Now_triggered()
+void DownLoadUI::on_actionDownload_Now_triggered()
 {
     _logger->debug("on_actionDownload_Now_triggered");
     //TODO
@@ -591,7 +588,7 @@ void MainWindow::on_actionDownload_Now_triggered()
 }
 
 //槽：下载完成
-int MainWindow::ADownloadCompleted(QString message){
+int DownLoadUI::ADownloadCompleted(QString message){
     _logger->debug("ADownloadCompleted");
     TrayIcon->showMessage("Download Completed",message,QSystemTrayIcon::Information,5000);
     if(isHidden()){
@@ -603,7 +600,7 @@ int MainWindow::ADownloadCompleted(QString message){
 
 //删除按钮
 //model中要删除指定的记录
-void MainWindow::on_actionRemove_triggered()
+void DownLoadUI::on_actionRemove_triggered()
 {
     _logger->debug("on_actionRemove_triggered");
     selectionModel= ui->DownloadsTable->selectionModel();
@@ -665,7 +662,7 @@ QString formatTime(qulonglong inval)
 // view菜单中 显示/隐藏左侧的分类
 // 左侧的分类界面实际为 QDockWidget， 显示隐藏分别为 showNormal()/close()
 // 并更新菜单项的文字信息
-void MainWindow::on_actionHide_Categories_triggered()
+void DownLoadUI::on_actionHide_Categories_triggered()
 {
     _logger->debug("on_actionHide_Categories_triggered");
     if(ui->actionHide_Categories->text().compare("Hide Categories")==0){
@@ -679,7 +676,7 @@ void MainWindow::on_actionHide_Categories_triggered()
 
 //左侧分类信息 categoriesTree控件的右键菜单的事件
 //没有效果！！！！！
-void MainWindow::on_categoriesTree_customContextMenuRequested(const QPoint &pos)
+void DownLoadUI::on_categoriesTree_customContextMenuRequested(const QPoint &pos)
 {
     _logger->debug("on_categoriesTree_customContextMenuRequested");
     int x = pos.x();
@@ -689,7 +686,7 @@ void MainWindow::on_categoriesTree_customContextMenuRequested(const QPoint &pos)
 }
 
 //左侧分类的dockbar的邮件菜单
-void MainWindow::on_dockWidgetContents_customContextMenuRequested(const QPoint &pos)
+void DownLoadUI::on_dockWidgetContents_customContextMenuRequested(const QPoint &pos)
 {
     _logger->debug("on_dockWidgetContents_customContextMenuRequested");
     int x = pos.x();
@@ -699,7 +696,7 @@ void MainWindow::on_dockWidgetContents_customContextMenuRequested(const QPoint &
 }
 
 //导出动作, 数据没有问题，但是就是没有写入到文件里。 需要flush一下才行。
-void MainWindow::on_actionTo_text_file_triggered()
+void DownLoadUI::on_actionTo_text_file_triggered()
 {
     _logger->debug("on_actionTo_text_file_triggered");
     //export
@@ -733,7 +730,7 @@ void MainWindow::on_actionTo_text_file_triggered()
 }
 
 //导入动作，依据每个url弹出添加下载任务的对话框
-void MainWindow::on_actionFrom_text_file_triggered()
+void DownLoadUI::on_actionFrom_text_file_triggered()
 {
     _logger->debug("on_actionFrom_text_file_triggered");
     //import
@@ -768,7 +765,7 @@ void MainWindow::on_actionFrom_text_file_triggered()
 }
 
 //清除所有完成的任务
-void MainWindow::on_actionDelete_All_Completed_triggered()
+void DownLoadUI::on_actionDelete_All_Completed_triggered()
 {
     _logger->debug("on_actionDelete_All_Completed_triggered");
     int reply = QMessageBox::warning(this,"Confirm","Are you sure you want to DELETE the completed downloads from the list?\nNote:Actual files will not be deleted in this process.",QMessageBox::Yes,QMessageBox::No);
@@ -785,7 +782,7 @@ void MainWindow::on_actionDelete_All_Completed_triggered()
 }
 
 //关于
-void MainWindow::on_actionAbout_triggered()
+void DownLoadUI::on_actionAbout_triggered()
 {
    // About123 *about =new About123();
     //about->show();
@@ -795,13 +792,13 @@ void MainWindow::on_actionAbout_triggered()
 }
 
 
-void MainWindow::onDownloadInited(const Download* download){
+void DownLoadUI::onDownloadInited(const Download* download){
     _logger->debug("onDownloadInited");
 
 }
 
 //DownLoader - slots, 主要是ui上状态更新
-void MainWindow::updateUrlsTable(const Download *download){
+void DownLoadUI::updateUrlsTable(const Download *download){
     _logger->debug("updateUrlsTable");
 
     //刷新之前记录选择状态，以备恢复，避免刷新中选择不了条目
@@ -838,23 +835,23 @@ void MainWindow::updateUrlsTable(const Download *download){
     _logger->debug("end updateUrlsTable");
 }
 
-void MainWindow::submitUrlViewChanges()
+void DownLoadUI::submitUrlViewChanges()
 {
 
 }
 
 
-void MainWindow::onDownloadRemoved(const QString &fileName)
+void DownLoadUI::onDownloadRemoved(const QString &fileName)
 {
     _logger->debug("onDownloadRemoved, fileName="+fileName);
 }
 
-void MainWindow::onDownloadResumed(const Download *download)
+void DownLoadUI::onDownloadResumed(const Download *download)
 {
     _logger->debug("onDownloadResumed");
 }
 
-void MainWindow::onDownloadDoesNotExistToRemove(const QUuid &uuid)
+void DownLoadUI::onDownloadDoesNotExistToRemove(const QUuid &uuid)
 {
     _logger->debug("onDownloadDoesNotExistToRemove");
 }

@@ -48,6 +48,7 @@
 #include "util/siteparser.h"
 #include "util/devdetector.h"
 #include "util/logme.h"
+#include "download/devmanagerdialog.h"
 
 QT_BEGIN_NAMESPACE
 class QWebEngineFrame;
@@ -151,6 +152,7 @@ private slots:
     //device
     void slotUpdateDevStatus();
     void initDeviceMonitor();
+    void slotOpenDevice();
     //<<<
 private:
     void loadDefaultState();
@@ -203,6 +205,7 @@ private:
 
     //device
     DevDetector *_devdetector;
+    DevManagerDialog *mDevDlg;
     //<<
 
     QIcon m_reloadIcon;

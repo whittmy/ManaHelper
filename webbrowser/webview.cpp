@@ -45,10 +45,10 @@
 #include "downloadmgr.h"
 #include "featurepermissionbar.h"
 #include "networkaccessmgr.h"
-#include "ui_passworddialog.h"
-#include "ui_proxy.h"
 #include "tabwidget.h"
 #include "webview.h"
+#include "ui_passworddialog.h"
+#include "ui_proxy.h"
 
 #include <QtGui/QClipboard>
 #include <QtNetwork/QAuthenticator>

@@ -14,12 +14,12 @@
 #include <QMessageBox>
 #include <QClipboard>
 #include <QFileDialog>
+#include "ui_downloadui.h"
 #include "download/newdownloadinfodialog.h"
 #include "download/optionsdialog.h"
 #include "systemtrayicon.h"
 #include "download/downloadpropertydialog.h"
-//#include "download/downloads.h"
-#include "download/adddownloaddialog.h"
+#include "download/adddownloaddialog_abandon.h"
 #include "download/downloadsdbmanager.h"
 #include "download/downloader.h"
 #include "util/logme.h"
@@ -28,15 +28,15 @@
 #include "util/appendix.h"
 
 namespace Ui {
-class MainWindow;
+class DownLoadUI;
 }
-class MainWindow : public QMainWindow
+class DownLoadUI : public QMainWindow
 {
     Q_OBJECT
     
 public:
-    explicit MainWindow(QWidget *parent = 0);
-    ~MainWindow();
+    explicit DownLoadUI(QWidget *parent = 0);
+    ~DownLoadUI();
 
 public:
     SystemTrayIcon *TrayIcon;
@@ -44,7 +44,7 @@ public:
     QMenu *TrayIconMenu;
     int AddUrlToAddDialog(QString);
     int StartListeningForAddUrl();
-    AddDownloadDialog *adddownloaddialog;
+    AddDownloadDialog_abandon *adddownloaddialog;
     QUdpSocket *udpSocket;
     QItemSelectionModel *selectionModel;
     //QStandardItemModel *model;
@@ -101,9 +101,9 @@ private:
 
     void doUpdateChk();
     static void ReqUgradeResult(REQ_TYPE type, QString str); //回调 静态
-
+    void openAddTaskDlg(QString url);
 private:
-    Ui::MainWindow *ui;
+    Ui::DownLoadUI *ui;
     DownLoader* mDownLoader;
     LogMe* _logger;
 };

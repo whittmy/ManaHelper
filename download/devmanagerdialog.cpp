@@ -3,7 +3,11 @@
 #include <QTreeView>
 #include <QDirModel>
 #include <QDebug>
+#include "util/devdetector.h"
 
+QString getDriver(){
+    return DevDetector::getDevPath();
+}
 
 DevManagerDialog::DevManagerDialog(QWidget *parent) :
     QDialog(parent),
@@ -22,9 +26,9 @@ DevManagerDialog::DevManagerDialog(QWidget *parent) :
 //    filters<<QString("*.jpeg")<<QString("*.jpg")<<QString("*.png")<<QString("*.tiff")<<QString("*.gif")<<QString("*.bmp");
 
     MyTreeModel *model = new MyTreeModel (_treeView_dir);
-    model->setHorizontalHeaderLabels(QStringList()<<QStringLiteral("project"));// <<QStringLiteral("info"));
+    model->setHorizontalHeaderLabels(QStringList()<<QStringLiteral("directory"));// <<QStringLiteral("info"));
     _treeView_dir->setModel(model);
-    addTopItemsForTreeView(model, QDir("c:\\"));
+    addTopItemsForTreeView(model, QDir(getDriver()));
 
 
     connect(_treeView_dir, SIGNAL(expanded(QModelIndex &)), this, SLOT(treeviewExpanded(QModelIndex &)));
@@ -36,14 +40,10 @@ DevManagerDialog::DevManagerDialog(QWidget *parent) :
     QStandardItemModel *listmodel = new QStandardItemModel(ui->listView_files);
     listmodel->setHorizontalHeaderLabels(QStringList()<<"sel"<<"filename"<<"size");
     ui->listView_files->setModel(listmodel);
-
-
 }
 
 
-QString getDriver(){
-    return "c:/";
-}
+
 
 QString getFullPathByIndex(QModelIndex &index){
     //路径处理是一大难题，先用 /组合，然后再转成目标系统的路径
@@ -92,13 +92,22 @@ void DevManagerDialog::treeviewClicked(QModelIndex &index){
 
 
 void DevManagerDialog::initResource(){
-    m_publicIconMap[QStringLiteral("treeItem_folder")] = QIcon(QStringLiteral(":/files/images/video.png"));
-    m_publicIconMap[QStringLiteral("treeItem_audio")] = QIcon(QStringLiteral(":/files/images/video.png"));
-    m_publicIconMap[QStringLiteral("treeItem_video")] = QIcon(QStringLiteral(":/files/images/video.png"));
-    m_publicIconMap[QStringLiteral("treeItem_image")] = QIcon(QStringLiteral(":/files/images/video.png"));
-    m_publicIconMap[QStringLiteral("treeItem_other")] = QIcon(QStringLiteral(":/files/images/video.png"));
+    m_publicIconMap[0] = QIcon(QStringLiteral(":/files/images/fold.png"));
+
+    m_publicIconMap[1] = QIcon(QStringLiteral(":/files/images/music.png"));
+    m_publicIconMap[2] = QIcon(QStringLiteral(":/files/images/video.png"));
+    m_publicIconMap[3] = QIcon(QStringLiteral(":/files/images/image.png"));
+    m_publicIconMap[4] = QIcon(QStringLiteral(":/files/images/file.png"));
 
 
+    mExtMap.insert(".mp4", 2);mExtMap.insert(".flv", 2);mExtMap.insert(".wmv", 2);
+    mExtMap.insert(".rmvb", 2);mExtMap.insert(".3gp", 2);mExtMap.insert(".mov", 2);
+
+    mExtMap.insert(".mp3", 1);mExtMap.insert(".aac", 1);mExtMap.insert(".wma", 1);
+    mExtMap.insert(".wav", 1);mExtMap.insert(".mid", 1);mExtMap.insert(".ogg", 1);
+
+    mExtMap.insert(".jpg", 3);mExtMap.insert(".jpeg", 3);mExtMap.insert(".bmp", 3);
+    mExtMap.insert(".png", 3);mExtMap.insert(".gif", 3);
 }
 
 void DevManagerDialog::addTopItemsForListView(QStandardItemModel *model, QDir dir, bool bchecked){
@@ -113,12 +122,20 @@ void DevManagerDialog::addTopItemsForListView(QStandardItemModel *model, QDir di
     }
 
     foreach(QFileInfo fi, list){
-        _logger->info(fi.fileName());
+        QString filename = fi.fileName();
+        QString ext = filename.right(filename.length()- filename.lastIndexOf(".")).toLower();
+
+        int i = 0;
+        QMap<QString,int>::iterator iter = mExtMap.find(ext);
+        if(iter == mExtMap.end())
+            i = 4;
+        else
+            i = iter.value();
 
         //添加子项
         QStandardItem* itemChild = new QStandardItem(
-                    m_publicIconMap[QStringLiteral("treeItem_folder")],
-                    fi.fileName());
+                    m_publicIconMap[i], fi.fileName());
+        itemChild->setEditable(false);
         if(bchecked)
             itemChild->setCheckable(true);
          model->appendRow(itemChild);
@@ -145,8 +162,8 @@ void DevManagerDialog::addTopItemsForTreeView(QStandardItemModel *model, QDir di
 
         //添加子项
         QStandardItem* itemChild = new QStandardItem(
-                    m_publicIconMap[QStringLiteral("treeItem_folder")],
-                    fi.fileName());
+                    m_publicIconMap[0], fi.fileName());
+        itemChild->setEditable(false);
         if(bchecked)
             itemChild->setCheckable(true);
          model->appendRow(itemChild);
@@ -173,7 +190,8 @@ void DevManagerDialog::addChildItemsForTreeView(QStandardItem* parent, QDir dir,
 
         //添加子项
         QStandardItem* itemChild = new QStandardItem(
-                    m_publicIconMap[QStringLiteral("treeItem_folder")], fi.fileName());
+                    m_publicIconMap[0], fi.fileName());
+        itemChild->setEditable(false);
         if(bchecked)
             itemChild->setCheckable(true);
 

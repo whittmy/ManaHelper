@@ -3,16 +3,16 @@
 
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkRequest>
-#include"mainwindow.h"
+#include"downloadui.h"
 class NetworkAccessManager : public QNetworkAccessManager
 {
     Q_OBJECT
 
 public:
     NetworkAccessManager(QObject *parent = 0);
-    MainWindow *mw;
+    DownLoadUI *mw;
     virtual QNetworkReply* createRequest ( Operation op, const QNetworkRequest & req, QIODevice * outgoingData = 0 );
-    void setMainWindow(MainWindow *mow);
+    void setMainWindow(DownLoadUI *mow);
 
 private:
     QList<QString> sslTrustedHostList;

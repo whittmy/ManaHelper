@@ -25,7 +25,14 @@
 Status::Status(QObject *parent) :
     QObject(parent)
 {
-     startTime();
+    _remainingTime = "";
+    _fileAlreadyBytes = _bytesTotal = _bytesSegTotal = _bytesReceived = 0;
+    _downloadRate = _progress = 0;
+    _dlMode = NewDownload;
+    _dlStatus = Idle;
+    _segidx = _segsum = -1;
+
+    startTime();
 }
 
 QString Status::remainingTime() const
@@ -110,6 +117,13 @@ QString Status::transDownLoadString(int status){
     return QString();
 }
 
+// 进度计算的方式如下：
+// cur，sum，   1/sum*curPercent + cur/sum
+// 0, 8 = > 1/8 *curPercent + 0/8
+// 1,8 =>  1/8*curPercent + 1/8
+// 7,8 => 1/8*curPercent + 7/8
+// 8,8 => complete!!!
+
 void Status::updateFileStatus(qint64 bytesReceived, qint64 bytesTotal)
 {
     if (_fileAlreadyBytes == 0) {
@@ -125,10 +139,10 @@ void Status::updateFileStatus(qint64 bytesReceived, qint64 bytesTotal)
     _progress = (_bytesTotal==0)? 0 : (_bytesReceived * 100)/_bytesTotal; //notice the case(_bytesTotal==0)
     _downloadRate = bytesReceived * 1000.0 / _startTime->elapsed();
 
-    qDebug() << QString("updateFileStatus:bytesReceived=%1,_fileAlreadyBytes=%2,bytesTotal=%3,progress=%4")
-                .arg(bytesReceived)
-                .arg(_fileAlreadyBytes)
-                .arg(bytesTotal)
+    qDebug() << QString("updateFileStatus:_bytesReceived=%1,_downloadRate=%2,_bytesTotal=%3,progress=%4")
+                .arg(_bytesReceived)
+                .arg(_downloadRate)
+                .arg(_bytesTotal)
                 .arg(_progress);
 
 }
@@ -195,4 +209,9 @@ void Status::setDownloadStatus(const Status::DownloadStatus dlStatus)
 Status::DownloadStatus Status::downloadStatus() const
 {
     return _dlStatus;
+}
+
+void Status::setSegInfo(int segidx, int segsum){
+    _segidx = segidx;
+    _segsum = segsum;
 }

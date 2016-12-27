@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
+ <class>DownLoadUI</class>
+ <widget class="QMainWindow" name="DownLoadUI">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -20,7 +20,7 @@
    <string>Download Manager</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="images.qrc">
+   <iconset resource="../images.qrc">
     <normaloff>:/menu/images/AddDownload.png</normaloff>:/menu/images/AddDownload.png</iconset>
   </property>
   <property name="toolButtonStyle">
@@ -103,7 +103,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>25</height>
+     <height>23</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuTasks">
@@ -308,7 +308,7 @@
          <string>All Downloads</string>
         </property>
         <property name="icon">
-         <iconset resource="images.qrc">
+         <iconset resource="../images.qrc">
           <normaloff>:/categories/images/folder.png</normaloff>:/categories/images/folder.png</iconset>
         </property>
         <item>
@@ -316,7 +316,7 @@
           <string>Compressed</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/archive.png</normaloff>:/categories/images/archive.png</iconset>
          </property>
         </item>
@@ -325,7 +325,7 @@
           <string>Documents</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/document.png</normaloff>:/categories/images/document.png</iconset>
          </property>
         </item>
@@ -334,7 +334,7 @@
           <string>Music</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/audio.png</normaloff>:/categories/images/audio.png</iconset>
          </property>
         </item>
@@ -343,7 +343,7 @@
           <string>Programs</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/downloadmanagment.png</normaloff>:/categories/images/downloadmanagment.png</iconset>
          </property>
         </item>
@@ -352,7 +352,7 @@
           <string>Video</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/video.png</normaloff>:/categories/images/video.png</iconset>
          </property>
         </item>
@@ -362,7 +362,7 @@
          <string>Unfinished</string>
         </property>
         <property name="icon">
-         <iconset resource="images.qrc">
+         <iconset resource="../images.qrc">
           <normaloff>:/categories/images/folder_open.png</normaloff>:/categories/images/folder_open.png</iconset>
         </property>
         <item>
@@ -370,7 +370,7 @@
           <string>Compressed</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/archive.png</normaloff>:/categories/images/archive.png</iconset>
          </property>
         </item>
@@ -379,7 +379,7 @@
           <string>Documents</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/document.png</normaloff>:/categories/images/document.png</iconset>
          </property>
         </item>
@@ -388,7 +388,7 @@
           <string>Music</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/audio.png</normaloff>:/categories/images/audio.png</iconset>
          </property>
         </item>
@@ -397,7 +397,7 @@
           <string>Programs</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/downloadmanagment.png</normaloff>:/categories/images/downloadmanagment.png</iconset>
          </property>
         </item>
@@ -406,7 +406,7 @@
           <string>Video</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/video.png</normaloff>:/categories/images/video.png</iconset>
          </property>
         </item>
@@ -416,7 +416,7 @@
          <string>Finished</string>
         </property>
         <property name="icon">
-         <iconset resource="images.qrc">
+         <iconset resource="../images.qrc">
           <normaloff>:/categories/images/ok.png</normaloff>:/categories/images/ok.png</iconset>
         </property>
         <item>
@@ -424,7 +424,7 @@
           <string>Compressed</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/archive.png</normaloff>:/categories/images/archive.png</iconset>
          </property>
         </item>
@@ -433,7 +433,7 @@
           <string>Documents</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/document.png</normaloff>:/categories/images/document.png</iconset>
          </property>
         </item>
@@ -442,7 +442,7 @@
           <string>Music</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/audio.png</normaloff>:/categories/images/audio.png</iconset>
          </property>
         </item>
@@ -451,7 +451,7 @@
           <string>Programs</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/downloadmanagment.png</normaloff>:/categories/images/downloadmanagment.png</iconset>
          </property>
         </item>
@@ -460,7 +460,7 @@
           <string>Video</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/video.png</normaloff>:/categories/images/video.png</iconset>
          </property>
         </item>
@@ -470,7 +470,7 @@
          <string>Queues</string>
         </property>
         <property name="icon">
-         <iconset resource="images.qrc">
+         <iconset resource="../images.qrc">
           <normaloff>:/categories/images/prio_0.png</normaloff>:/categories/images/prio_0.png</iconset>
         </property>
         <item>
@@ -478,7 +478,7 @@
           <string>Main Queue</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/tab.png</normaloff>:/categories/images/tab.png</iconset>
          </property>
         </item>
@@ -487,7 +487,7 @@
           <string>Queue #1</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/tab.png</normaloff>:/categories/images/tab.png</iconset>
          </property>
         </item>
@@ -496,7 +496,7 @@
           <string>Queue #2</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/tab.png</normaloff>:/categories/images/tab.png</iconset>
          </property>
         </item>
@@ -505,7 +505,7 @@
           <string>Queue #3</string>
          </property>
          <property name="icon">
-          <iconset resource="images.qrc">
+          <iconset resource="../images.qrc">
            <normaloff>:/categories/images/tab.png</normaloff>:/categories/images/tab.png</iconset>
          </property>
         </item>
@@ -517,7 +517,7 @@
   </widget>
   <action name="actionAdd_New">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset resource="../images.qrc">
      <normaloff>:/menu/images/add.png</normaloff>:/menu/images/add.png</iconset>
    </property>
    <property name="text">
@@ -529,7 +529,7 @@
   </action>
   <action name="actionQuit">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset resource="../images.qrc">
      <normaloff>:/menu/images/exit.png</normaloff>:/menu/images/exit.png</iconset>
    </property>
    <property name="text">
@@ -538,7 +538,7 @@
   </action>
   <action name="actionStop_Download">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset resource="../images.qrc">
      <normaloff>:/menu/images/stop.png</normaloff>:/menu/images/stop.png</iconset>
    </property>
    <property name="text">
@@ -547,7 +547,7 @@
   </action>
   <action name="actionRemove">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset resource="../images.qrc">
      <normaloff>:/menu/images/remove.png</normaloff>:/menu/images/remove.png</iconset>
    </property>
    <property name="text">
@@ -556,7 +556,7 @@
   </action>
   <action name="actionDownload_Now">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset resource="../images.qrc">
      <normaloff>:/menu/images/media-playback-start.png</normaloff>:/menu/images/media-playback-start.png</iconset>
    </property>
    <property name="text">
@@ -565,7 +565,7 @@
   </action>
   <action name="actionRedownload">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset resource="../images.qrc">
      <normaloff>:/menu/images/restart.png</normaloff>:/menu/images/restart.png</iconset>
    </property>
    <property name="text">
@@ -584,7 +584,7 @@
   </action>
   <action name="actionDelete_All_Completed">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset resource="../images.qrc">
      <normaloff>:/menu/images/delete.png</normaloff>:/menu/images/delete.png</iconset>
    </property>
    <property name="text">
@@ -593,7 +593,7 @@
   </action>
   <action name="actionOptions">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset resource="../images.qrc">
      <normaloff>:/menu/images/settings.png</normaloff>:/menu/images/settings.png</iconset>
    </property>
    <property name="text">
@@ -610,7 +610,7 @@
   </action>
   <action name="actionAbout">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset resource="../images.qrc">
      <normaloff>:/menu/images/about.png</normaloff>:/menu/images/about.png</iconset>
    </property>
    <property name="text">
@@ -622,7 +622,7 @@
   </action>
   <action name="actionArrange_Files">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset resource="../images.qrc">
      <normaloff>:/menu/images/sort.png</normaloff>:/menu/images/sort.png</iconset>
    </property>
    <property name="text">
@@ -631,7 +631,7 @@
   </action>
   <action name="actionTo_text_file">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset resource="../images.qrc">
      <normaloff>:/menu/images/text.png</normaloff>:/menu/images/text.png</iconset>
    </property>
    <property name="text">
@@ -640,7 +640,7 @@
   </action>
   <action name="actionFrom_text_file">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset resource="../images.qrc">
      <normaloff>:/menu/images/text.png</normaloff>:/menu/images/text.png</iconset>
    </property>
    <property name="text">
@@ -649,7 +649,7 @@
   </action>
   <action name="actionProperties">
    <property name="icon">
-    <iconset resource="images.qrc">
+    <iconset resource="../images.qrc">
      <normaloff>:/menu/images/batch.png</normaloff>:/menu/images/batch.png</iconset>
    </property>
    <property name="text">
@@ -662,7 +662,7 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
-  <include location="images.qrc"/>
+  <include location="../images.qrc"/>
  </resources>
  <connections/>
 </ui>

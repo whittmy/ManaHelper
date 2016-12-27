@@ -1,4 +1,4 @@
-﻿#include "download/mainwindow.h"
+﻿#include "download/downloadui.h"
 #include <QApplication>
 #include <QtPlugin>
 #include <QFile>
@@ -6,6 +6,7 @@
 #include "util/xml_parser_playurl.h"
 #include "util/codec.h"
 
+#include "download/downloadui.h"
 
 
 static QString strPidFile;
@@ -27,7 +28,7 @@ void writePidFile()
 
 int main(int argc, char *argv[])
 {
-    /*
+    /* */
     QApplication app(argc, argv);
     //---- 设置应用信息  QSettings需先设置这些， 在浏览器模块部分，这些代码都包含了，省略 >>>>>>>>
     app.setOrganizationName("LanMeng");
@@ -40,7 +41,7 @@ int main(int argc, char *argv[])
     app.setApplicationVersion("1.0");
     app.setDesktopSettingsAware(true);
     app.setWindowIcon(QIcon(":icons/images/icon.png"));
-    */
+
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     //if (!strPidFile.isEmpty())
@@ -74,7 +75,7 @@ int main(int argc, char *argv[])
 //    qDebug()<<QString::asprintf("_mmh%03d.download", mCurSegIdx);
 
 
-
+/*
     Q_INIT_RESOURCE(data);
     BrowserApplication application(argc, argv);
     if (!application.isTheOnlyBrowser())
@@ -82,13 +83,12 @@ int main(int argc, char *argv[])
 
     application.newMainWindow();
     return application.exec();
-
-
-//    MainWindow w;
-//    w.resize(800, 600);
-//    w.move(200,100);
-//    w.show();
-    //return app.exec();
+*/
+    DownLoadUI w;
+    w.resize(800, 600);
+    w.move(200,100);
+    w.show();
+    return app.exec();
 }
 
 

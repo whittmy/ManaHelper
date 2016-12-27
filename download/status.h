@@ -79,6 +79,7 @@ public:
 
 
     qint64 downloadRate() const;
+    void setSegInfo(int segidx, int segsum);
 
 public slots:
     void startTime();
@@ -94,6 +95,8 @@ private:
     QTime *_startTime;
     DownloadMode _dlMode;
     DownloadStatus _dlStatus;
+
+    int _segidx, _segsum;
 
 };
 

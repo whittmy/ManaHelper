@@ -1,5 +1,4 @@
 ﻿#include "download/newdownloadinfodialog.h"
-#include "download/ui_newdownloadinfodialog.h"
 #include "download/downloadsdbmanager.h"
 //#include "download/downloads.h"
 #include<QString>
@@ -16,7 +15,7 @@ NewDownloadInfoDialog::NewDownloadInfoDialog(QWidget *parent,QString UrlInput) :
     ui->urlinput->setText(UrlInput);
     ui->descriptionEdit->setFocus();
 
-    QSettings settings(this);
+    QSettings settings;
     switch(ui->categoryBox->currentIndex()){ //分类索引对应 保存路径。
     case 0: ui->SaveToEdit->setText(settings.value("generalDirectory").toString());break;
     case 1: ui->SaveToEdit->setText(settings.value("compressedDirectory").toString());break;
@@ -81,7 +80,7 @@ void NewDownloadInfoDialog::on_pushButton_2_clicked()
 //分类事件-触发，更新-刷新界面路径信息
 void NewDownloadInfoDialog::on_categoryBox_currentIndexChanged(int index)
 {
-    QSettings settings(this);
+    QSettings settings;
     switch(index){
     case 0: ui->SaveToEdit->setText(settings.value("generalDirectory").toString());break;
     case 1: ui->SaveToEdit->setText(settings.value("compressedDirectory").toString());break;
