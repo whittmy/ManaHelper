@@ -25,7 +25,7 @@ public:
     void addTask(RequestInfo *req); //传入请求信息，包括回调函数
 
 signals:
-    void sig_onFinished(QString result);
+    void sig_onFinished(REQ_TYPE type, QString result);
 
 private slots:
     void slot_replyFinished(QObject*);

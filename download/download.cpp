@@ -31,7 +31,10 @@ Download::Download(QObject *parent):
     slot_httpError(QNetworkReply::NoError, "");
 
     mHttp = new HttpRequestor();
-    connect(mHttp, SIGNAL(sig_onFinished(QString)), this, SLOT(slot_onHttpReqFinished(QString)));
+    connect(mHttp, SIGNAL(sig_onFinished(REQ_TYPE, QString)), this, SLOT(slot_onHttpReqFinished(REQ_TYPE, QString)));
+
+    _file = NULL;
+    _status = NULL;
 }
 
 Download::~Download(){
@@ -41,10 +44,15 @@ Download::~Download(){
 //新建任务，创建该任务的基本信息
 //注意下载存放的目标位置都是为临时位置， 最终要转移到设备上
 //下载中的文件名是加上".download"来标识，下载完成后，需自动更名。
-bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, const QString &fileName)
+
+// 有必要统计下，文件总大小(预估)，以及实际已下载的字节数，以便计算剩余时间。
+// 新的任务，要确定Status中的两个数据，分别为：
+//setFileAlreadyBytes();
+//setBytesTotal();
+bool Download::newDownload(int row, const int ID, const QUrl &url, const QUuid &uuid, const QString &fileName, qint64 size)
 {
     _logger->info(QString("newDownload: %1").arg(url.toString()));
-
+    _row = row;
     setUuid(uuid);
     setUrl(url); //该url为总url， 下载细节以分段url为准
     setID(ID);
@@ -67,7 +75,7 @@ bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, con
 
     //缓存文件
     _status = new Status(this);
-    _file = new QFile(this);
+    _file = NULL;
     bool isOpened = false;
 
     QString fileWithPath = QString(Paths::cacheDirPath()).append(fileNewName);
@@ -78,9 +86,12 @@ bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, con
         _logger->info("file is complete, set WaitCombine, and mCurSegIdx is 1");
 
         this->setFile(new QFile(fileWithPath));
-
+         //设置总大小&已下载数>>
+        _status->setBytesTotal(getFileSize());
+        _status->setFileAlreadyBytes(getFileSize());
+        //<<<
         //下载状态是完成的，等待转码转存
-        _status->setDownloadStatus(Status::DownloadStatus::WaitCombine);
+        _status->setDownloadStatus(Status::WaitCombine);
 
         //已完成的任务， 设定其只有一个段(即便其下载时有多段)，
         //设置段号为1,(1>=cnt)说明已结束
@@ -97,14 +108,24 @@ bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, con
         foreach(QFileInfo p, flist){
             _logger->info("filter-file:"+p.fileName());
         }
+        _logger->info("begin to handle the cache file");
+        qint64 fsize = 0;
+        for(int i=0; i<flist.size(); i++){
+            _logger->info(QString("file:%1").arg(i));
+            QFileInfo fi=flist.at(i);
 
-
-        foreach(QFileInfo fi, flist){
             //仅判断第一个(也即最后一个) 即可
             QString name = fi.fileName();
             int pos = name.indexOf(QRegExp("_mmh[0-9]{3}"));
 
             if(name.endsWith(".download")){
+                if(i > 0){
+                    fsize += fi.size();
+                    continue;
+                }
+                fsize += fi.size();
+
+
                 //当前段正在下载
                 mCurSegIdx =  name.mid(pos+4, 3).toInt();
 
@@ -115,6 +136,12 @@ bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, con
                 _logger->info(QString("find the .download file, name=%1，get-segIdx=%2, append-mode").arg(name).arg(mCurSegIdx));
              }
              else if(pos >= 0){
+                if(i > 0){
+                    fsize += fi.size();
+                    continue;
+                }
+                fsize += fi.size();
+
                 //当前段已下载完成，准备新的开始(不管有没有新的段)
                 mCurSegIdx = name.mid(pos+4, 3).toInt()+1;
 
@@ -129,18 +156,24 @@ bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, con
                 //没有段下载
                 newTask = true;
             }
-            break;
+            //break; 用上面的continue代替了
         }
 
         //如果还没有开始
         if(newTask || flist.size()==0){
+            _logger->info("had no seg-downloaded, we new it: "+ fileWithPath+"_mmh000.download");
+
             mCurSegIdx = 0;
             this->setFile(new QFile(fileWithPath+"_mmh000.download"));
             isOpened = _file->open(QIODevice::WriteOnly);
-
             _status->setDownloadMode(Status::NewDownload);
-            _logger->info("had no seg-downloaded, we new it: "+ fileWithPath+"_mmh000.download");
-
+            _status->setBytesTotal(0);
+            _status->setFileAlreadyBytes(0);
+        }
+        else{
+            _logger->info("have the cache, set it info");
+            //????? _status->setBytesTotal(???);
+            _status->setFileAlreadyBytes(fsize);
         }
 
         //打开失败，
@@ -154,6 +187,7 @@ bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, con
             _logger->info("open file successfully");
         }
         this->setCreated(QDateTime::currentDateTime());
+
     }
 
 
@@ -184,28 +218,49 @@ void Download::preTreatment(){
         //不牵涉到网络请求解析，直接调用 slot_onHttpReqFinished
         _logger->info("direct to slot_onHttpReqFinished fro url:"+_url.toString());
         mSegUrls.append(_url);
-        slot_onHttpReqFinished("");
+        slot_onHttpReqFinished(UNDEFINED, "");
     }
 }
 
 //解析分段url完成，开始发送通知：Download已添加完成
-void Download::slot_onHttpReqFinished(QString rslt){
+void Download::slot_onHttpReqFinished(REQ_TYPE type, QString rslt){
     _logger->info("slot_onHttpReqFinished enter --rslt:"+rslt);
     if(!rslt.isEmpty()){
         Xml_Parser_Playurl xmlparser(rslt);
         xmlparser.parser();
-        QStringList list = xmlparser.getFiles();
-        foreach(QString url ,list){
-            _logger->info("append seg-url:"+url);
-            mSegUrls.append(QUrl(url));
+        if(xmlparser.isValid()){
+            QStringList list = xmlparser.getFiles();
+            foreach(QString url ,list){
+                _logger->info("append seg-url:"+url);
+                mSegUrls.append(QUrl(url));
+            }
         }
+        else{
+            _logger->info("req-data is invalid");
+        }
+
     }
 
 
     //编号已到结尾的，说明全部已处理完了。
      _logger->info(QString("cursegidx=%1,sum=%2").arg(mCurSegIdx).arg(getSegCnt()));
-    if(mCurSegIdx >= getSegCnt() && getSegCnt()>0){
+     if(getSegCnt() == 0)
+     {
+         _status->setDownloadStatus(Status::Failed);
+         if(_file != NULL){
+             closeFile(); //清除多余的
+             _file->remove();
+             setFile(0);
+         }
+         _logger->info("had  === Status::Failed");
+     }
+     else if(mCurSegIdx >= getSegCnt()){
         _status->setDownloadStatus(Status::WaitCombine);
+        if(_file != NULL){
+            closeFile(); //清除多余的
+            _file->remove();
+            setFile(0);
+        }
         _logger->info("had  === Status::WaitCombine");
     }
 
@@ -359,8 +414,15 @@ void Download::doNextSeg(){
 
     //2.递增段号
     mCurSegIdx++;
-    if(mCurSegIdx >= getSegCnt())
+    if(mCurSegIdx >= getSegCnt()){
+        _logger->info("end seg,so return");
         return;
+    }
+
+    //同步更新Status的相关数据
+    _status->setSegInfo(mCurSegIdx, getSegCnt());
+    _status->nextSeg();
+
 
     //3.设置File, 以便下载上
     QString fileWithPath =  QString::asprintf("%s_mmh%03d.download",

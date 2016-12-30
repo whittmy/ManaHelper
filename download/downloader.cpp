@@ -40,26 +40,46 @@ DownLoader::~DownLoader(){
 //对外负责显示，经用户对外部数据的操作，则可以对内部的下载、解析保存一致性。
 
 //下载的开始/恢复动作为共用， 避免解析产生的临时url段失效
-void DownLoader::start(const int ID, const QString &url, const QUuid &uuid, const QString &fileName)
+void DownLoader::start(const int row, const int ID, const QString &url, const QUuid &uuid, const QString &fileName, qint64 size)
 {
     _logger->debug("addDownload");
-    _logger->info(QString("%1,%2,%3,%4").arg(ID).arg(url).arg(uuid.toString()).arg(fileName));
+    _logger->info(QString("%1,%2,%3,%4,%5").arg(ID).arg(url).arg(uuid.toString()).arg(fileName).arg(size));
 
     //Download 资源释放？？？
     Download *newDownload = new Download(this);
     connect(newDownload, SIGNAL(sig_onTaskAdded(Download*)), this, SLOT(slot_onTaskAdded(Download*)));
 
+    //信号转发
+    connect(mDloader, SIGNAL(sg_dlInitialed(const Download*)),
+                    this, SIGNAL(downloadInitialed(const Download *)));
+    connect(mDloader, SIGNAL(sg_dlPaused(const Download*)),
+                    this, SIGNAL(downloadPaused(const Download *)));
+    connect(mDloader, SIGNAL(sg_dlResumed(const Download*)),
+                    this, SIGNAL(downlaodResumed(const Download *)));
+    connect(mDloader, SIGNAL(sg_dlUpdated(const Download*)),
+                    this, SIGNAL(downloadUpdated(const Download *)));
+    connect(mDloader, SIGNAL(sg_dlRemoved(const Download*)),
+                    this, SIGNAL(downloadRemoved(const Download*)));
+    connect(mDloader, SIGNAL(sg_dlFinished(const Download*)),
+                    this, SIGNAL(downloadFinished(const Download*)));
+
     //当添加完成后，会自动触发slot_onTaskAdded函数
-    newDownload->newDownload(ID,url,uuid,fileName);
+    newDownload->newDownload(row, ID,url,uuid,fileName,size);
 
-
-   // mDloader->doStart(newDownload);
+   //mDloader->doStart(newDownload);
 }
 
 void DownLoader::slot_onTaskAdded(Download *download){
     _logger->info("slot_onTaskAdded");
-    if(download->getCurSegUrl().isEmpty()){
-        _logger->error("empty url");
+
+    if(download->status()->downloadStatus() == Status::Failed
+            || download->getSegCnt() == 0){
+        emit downloadFailed(download);
+        return;
+    }
+    else if(download->status()->downloadStatus() == Status::WaitCombine
+            || download->getCurSegUrl().isEmpty()){
+        emit downloadFinished(download);
         return;
     }
 

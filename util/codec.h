@@ -44,7 +44,7 @@ public:
     ~Codec();
 
     void setFileInfo(QString srcpath, QString filename);
-    bool concat(); //to mp4
+    QString concat(); //to mp4
     QString getLastErr();
 
     bool removeTmp();

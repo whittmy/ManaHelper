@@ -48,6 +48,8 @@
 #include <QtCore/QPointer>
 
 #include <QtGui/QIcon>
+#include "download/downloadui.h"
+
 
 QT_BEGIN_NAMESPACE
 class QLocalServer;
@@ -86,6 +88,9 @@ public:
     static QNetworkAccessManager *networkAccessManager();
     static BookmarksManager *bookmarksManager();
 
+    //luokui>>
+    static DownLoadUI *downLoadUI();
+    //<<<
 #if defined(Q_OS_OSX)
     bool event(QEvent *event);
 #endif
@@ -115,6 +120,12 @@ private:
     static DownloadMgr *s_downloadManager;
     static QNetworkAccessManager *s_networkAccessManager;
     static BookmarksManager *s_bookmarksManager;
+
+
+    //luokui>>>
+    static DownLoadUI* s_downLoadui;
+    //<<<<
+
 
     QList<QPointer<BrowserMainWindow> > m_mainWindows;
     QLocalServer *m_localServer;

@@ -1,7 +1,6 @@
 ﻿#ifndef DOWNLOADSDBMANAGER_H
 #define DOWNLOADSDBMANAGER_H
 #include <QtSql>
-#include <download/modeldownloads.h>
 #include "util/logme.h"
 
 class DownloadsDBManager :public QObject
@@ -17,65 +16,72 @@ public:
     void closeDB();
     bool isDbValid();
 
-    /*
+/* 注释掉，和modelDownloads类互为包含，编译有问题
     void setHeaders(modelDownloads *model);
-
-    int insertDownload(QString filename,QString url,QString loc,QString desc,int cat,QString ref,int queue,int pieces);
-    void deleteDownload(int id);
-
     modelDownloads *queryDownloads(int status,int type,int queue);
+*/
+
+    int insertDownload(QString filename,QString url,QString loc,QString desc,qint64 cat,QString ref,qint64 queue,qint64 pieces);
+    void deleteDownload(qint64 id);
+
 
     //CRUD OPERATIONS
-    QString getFileName(int id);
-    void setFileName(int id, QString Filename);
+    QString getFileName(qint64 id);
+    void setFileName(qint64 id, QString Filename);
 
-    QString getURL(int id);
-    void setURL(int id, QString URL);
+    QString getURL(qint64 id);
+    void setURL(qint64 id, QString URL);
 
-    int getDateAdded(int id);
-    void setDateAdded(int id, int dateAdded);
-    void setDateAdded(int id, QString dateAdded);
+    qint64 getDateAdded(qint64 id);
+    void setDateAdded(qint64 id, qint64 dateAdded);
+    void setDateAdded(qint64 id, QString dateAdded);
 
-    int getQueue(int id);
-    void setQueue(int id,int queue);
+    qint64 getQueue(qint64 id);
+    void setQueue(qint64 id,qint64 queue);
 
-    int getSize(int id);
-    void setSize(int id,int size);
+    qint64 getSize(qint64 id);
+    void setSize(qint64 id,qint64 size);
 
-    int getFinishedStatus(int id);
-    void setFinishedStatus(int id,int finishedStatus);
+    qint64 getFinishedStatus(qint64 id);
+    void setFinishedStatus(qint64 id,qint64 finishedStatus);
 
-    QString getStatus(int id);
-    void setStatus(int id,QString status);
+    qint64 getStatus(qint64 id);
+    void setStatus(qint64 id,qint64 status);
 
-    int getTimeleft(int id);
-    void setTimeLeft(int id,int timeleft);
+    qint64 getTimeleft(qint64 id);
+    void setTimeLeft(qint64 id,qint64 timeleft);
 
-    int getTransferRate(int id);
-    void setTransferRate(int id,int transferRate);
+    qint64 getTransferRate(qint64 id);
+    void setTransferRate(qint64 id,int transferRate);
 
-    int getLastTry(int id);
-    void setLastTry(int id,int lastry);
+    qint64 getLastTry(qint64 id);
+    void setLastTry(qint64 id,qint64 lastry);
 
-    QString getDescription(int id);
-    void setDescription(int id,QString desc);
+    QString getDescription(qint64 id);
+    void setDescription(qint64 id,QString desc);
 
-    QString getSaveLocation(int id);
-    void setSaveLocation(int id,QString saveLocation);
+    QString getSaveLocation(qint64 id);
+    void setSaveLocation(qint64 id,QString saveLocation);
 
-    QString getReferer(int id);
-    void setReferer(int id,QString referer);
+    QString getReferer(qint64 id);
+    void setReferer(qint64 id,QString referer);
 
-    int getType(int id);
-    void setType(int id,int type);
+    qint64 getType(qint64 id);
+    void setType(qint64 id,qint64 type);
 
-    int getTimeElapsed(int id);
-    void setTimeElapsed(int id,int timeElapsed);
+    qint64 getTimeElapsed(qint64 id);
+    void setTimeElapsed(qint64 id,qint64 timeElapsed);
 
-    int getPieces(int id);
-    void setPieces(int id,int pieces);
+    qint64 getPieces(qint64 id);
+    void setPieces(qint64 id,qint64 pieces);
+
+    QString getUuid(qint64 id);
+    void setUuid(qint64 id, QString uuid);
+
+//    int getID(qint64 id);
+//    void setID(qint64 id, qint64 id);
     //CRUD OPERATIONS END
-    */
+
 private:
 
     LogMe *_logger;

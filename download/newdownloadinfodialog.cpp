@@ -7,12 +7,14 @@
 #include<QMessageBox>
 
 //设置url的一些下载属性
-NewDownloadInfoDialog::NewDownloadInfoDialog(QWidget *parent,QString UrlInput) :
+NewDownloadInfoDialog::NewDownloadInfoDialog(QWidget *parent, QString title, QString UrlInput) :
     QDialog(parent),
     ui(new Ui::NewDownloadInfoDialog)
 {
     ui->setupUi(this);
+
     ui->urlinput->setText(UrlInput);
+    ui->_lableTitle->setText(title);
     ui->descriptionEdit->setFocus();
 
     QSettings settings;
@@ -31,6 +33,7 @@ NewDownloadInfoDialog::~NewDownloadInfoDialog()
 {
     delete ui;
 }
+
 
 
 //设置保存路径，点击事件， 打开系统文件对话框，选中后更新 SaveToEdit控件的内容。
@@ -56,7 +59,10 @@ int NewDownloadInfoDialog::insertANewDownload(){
     QString url = ui->urlinput->text();
 
     QFileInfo fileInfo(QUrl(url).path());
-    QString filename = fileInfo.fileName();
+
+    QString filename =  ui->_lableTitle->text();
+    if(filename.isEmpty())
+       filename = fileInfo.fileName();
 
     QString loc = ui->SaveToEdit->text();
     QString desc = ui->descriptionEdit->toPlainText();
@@ -65,7 +71,7 @@ int NewDownloadInfoDialog::insertANewDownload(){
     int queue = 0;
     int pieces = 10;
     QString uuid = QUuid::createUuid().toString();
-    int newrow = localmodel->insertDownload(filename, url, loc,desc,cat,ref,queue,pieces,uuid);
+    int newrow = _model->insertDownload(filename, url, loc,desc,cat,ref,queue,pieces,uuid);
     return newrow;
 }
 
@@ -80,6 +86,8 @@ void NewDownloadInfoDialog::on_pushButton_2_clicked()
 //分类事件-触发，更新-刷新界面路径信息
 void NewDownloadInfoDialog::on_categoryBox_currentIndexChanged(int index)
 {
+    qDebug()<< ui->categoryBox->currentText();
+
     QSettings settings;
     switch(index){
     case 0: ui->SaveToEdit->setText(settings.value("generalDirectory").toString());break;
@@ -113,22 +121,22 @@ void NewDownloadInfoDialog::on_pushButton_3_clicked()
 //        connect(dl,SIGNAL(updateinterface()),this,SLOT(UpdateInterface()));
 
           //数据获取也通过model
-          int ID = localmodel->data(localmodel->index(newrow, 0)).toInt();
-          QString url = localmodel->data(localmodel->index(newrow,2)).toString();
-          QString filename = localmodel->data(localmodel->index(newrow, 1)).toString();
-          QString uuid = localmodel->data(localmodel->index(newrow, 17)).toString();
-
+          qint64 ID =  _model->getID(newrow);//  ->data(localmodel->index(newrow, 0)).toInt();
+          QString url = _model->getURL(newrow);// data(localmodel->index(newrow,2)).toString();
+          QString filename = _model->getFileName(newrow);// data(localmodel->index(newrow, 1)).toString();
+          QString uuid = _model->getUuid(newrow);// data(localmodel->index(newrow, 17)).toString();
+          qint64 size = _model->getSize(newrow);
 //        Downloads *mManager = new Downloads(this);
 //        connect(mManager,SIGNAL(downloadComplete()),this,SLOT(finished()));
 //        connect(mManager,SIGNAL(progress(int)),this,SLOT(progress(int)));
 //        mManager->startDownload(QUrl(url));
 
-          mDownLoader->start(ID, url, uuid, filename);
+          mDownLoader->start(newrow, ID, url, uuid, filename, size);
     }
 
     this->destroy();
 }
 
 void NewDownloadInfoDialog::setLocalModel(modelDownloads *model){
-    localmodel = model;
+    _model = model;
 }

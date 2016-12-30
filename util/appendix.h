@@ -9,7 +9,7 @@
 //};
 
 enum REQ_TYPE{
-    NOTHING,
+    UNDEFINED,
     UPGRADE_SELF,
     UPGRADE_DEVICE
 };
@@ -23,7 +23,7 @@ public:
     RequestInfo(){
         url = "";
         callback = NULL;
-        reqType = NOTHING;
+        reqType = UNDEFINED;
     }
 
     QString url;

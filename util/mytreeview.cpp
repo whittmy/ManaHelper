@@ -17,6 +17,7 @@ MyTreeModel::~MyTreeModel(){
 
 //让所有目录都前面都显示 小三角
 bool MyTreeModel::hasChildren(const QModelIndex &parent) const{
+    parent;
     return true;
 }
 

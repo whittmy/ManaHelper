@@ -50,6 +50,9 @@
 #include "util/logme.h"
 #include "download/devmanagerdialog.h"
 
+#include "util/httprequestor.h"
+
+
 QT_BEGIN_NAMESPACE
 class QWebEngineFrame;
 QT_END_NAMESPACE
@@ -84,6 +87,7 @@ public:
     Q_INVOKABLE void runScriptOnOpenViews(const QString &);
 
     void hideSome();
+    void doUpdateChk();
 
 public slots:
     void loadPage(const QString &url);
@@ -148,6 +152,7 @@ private slots:
     void slotCurrentChanged(int);
     void slotAddTask();
     void slotDownLoadUI();
+    void slotReqUgradeResult(REQ_TYPE type, QString str);
 
     //device
     void slotUpdateDevStatus();
@@ -202,6 +207,8 @@ private:
     QAction* m_addtask;
     QIcon m_addtaskIcon;
     SiteParser *mSiteParser;
+
+    HttpRequestor* m_request;
 
     //device
     DevDetector *_devdetector;

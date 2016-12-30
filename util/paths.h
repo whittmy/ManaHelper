@@ -25,14 +25,20 @@
 #define STRINGIFY(x) STRINGIFY2(x)
 
 #include <QString>
-
+#include <QHash>
 class Paths
 {
 public:
-
+    static void init();
     static QString translationPath();
     static QString docPath();
     static QString cacheDirPath();
+    static void writeTxtFile(QString file, QString txt);
+    static QString devicePath(QString txt);
+
+
+private:
+    static QHash<QString, QString> mDevPathHash;
 };
 
 #endif // PATHS_H

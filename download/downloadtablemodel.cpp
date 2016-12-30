@@ -20,6 +20,7 @@
 
 #include "downloadtablemodel.h"
 #include "download/downloadconstants.h"
+#include "status.h"
 
 DownloadTableModel::DownloadTableModel(QObject *parent) :
     QAbstractTableModel(parent)
@@ -69,10 +70,11 @@ QVariant DownloadTableModel::data(const QModelIndex &index, int role) const
         case DownloadConstants::Attributes::Status:
             int progress;
             progress = index.sibling(index.row(), DownloadConstants::Attributes::Progress).data().toString().remove("%").toInt();
+
             if (progress >= 100) {
-                value = this->downloadStatus(3);
+                value = Status::transDownLoadString(Status::WaitCombine);
             } else {
-                value = this->downloadStatus(download->status());
+                value = Status::transDownLoadString(download->status());
             }
             break;
         case DownloadConstants::Attributes::Progress:
@@ -250,31 +252,6 @@ bool DownloadTableModel::removeRows(int position, int rows, const QModelIndex &i
     return true;
 }
 
-QString DownloadTableModel::downloadStatus(const int status) const
-{
-    switch(status){
-    case 0:
-        return tr("Idle");
-        break;
-    case 1:
-        return tr("Starting");
-        break;
-    case 2:
-        return tr("Downloading");
-        break;
-    case 3:
-        return tr("Finished");
-        break;
-    case 4:
-        return tr("Failed");
-        break;
-    case 5:
-        return tr("Paused");
-        break;
-    }
-
-    return tr("Unknown Status");
-}
 
 QVariant DownloadTableModel::downloadItemValue(const int &row, const DownloadConstants::Attributes::Attributes &column) const
 {

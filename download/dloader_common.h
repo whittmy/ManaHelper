@@ -52,7 +52,7 @@ private slots:
     void slot_replyMetaDataChanged(QObject *currentReply);
     void slot_httpReadyRead(QObject *currentReply);
     void slot_httpFinished(QObject *currentReply);
-
+//    void slot_progress(qint64 recv, qint64 total);
 
 private:
     void removeFile(Download *download);

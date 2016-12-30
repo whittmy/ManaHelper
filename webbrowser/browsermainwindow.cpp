@@ -74,6 +74,12 @@
 #include "download/downloadui.h"
 #include "download/newdownloadinfodialog.h"
 
+#include "util/xml_parser_upgrade.h"
+#include "download/upgradetipdialog.h"
+
+
+extern QString gUrlArr[];
+
 template<typename Arg, typename R, typename C>
 struct InvokeWrapper {
     R *receiver;
@@ -104,6 +110,7 @@ BrowserMainWindow::BrowserMainWindow(QWidget *parent, Qt::WindowFlags flags)
     ,_logger(new LogMe(this))
     ,_devdetector(new DevDetector((HANDLE)this->winId(), this))
     ,mDevDlg(new DevManagerDialog(this))
+    ,m_request(new HttpRequestor(this))
 {
     setToolButtonStyle(Qt::ToolButtonFollowStyle);
     setAttribute(Qt::WA_DeleteOnClose, true);
@@ -187,10 +194,15 @@ BrowserMainWindow::BrowserMainWindow(QWidget *parent, Qt::WindowFlags flags)
     m_navigationBar->setIconSize(QSize(35, 35));
     //<<<<
 
+    connect(m_request, SIGNAL(sig_onFinished(REQ_TYPE,QString)), SLOT(slotReqUgradeResult(REQ_TYPE,QString)));
+
     setContextMenuPolicy(Qt::NoContextMenu); //luokui forribiden the right-menu
 
     //luokui初始化设备检测器
     initDeviceMonitor();
+
+//    //升级检查
+    doUpdateChk();
 }
 
 //luokui the last tab closed, call this function,
@@ -219,6 +231,7 @@ void BrowserMainWindow::slotTabsChanged(){
 
 
 void BrowserMainWindow::slotCurrentChanged(int idx){
+    idx;
     m_addtask->setDisabled(true);
 
     if(currentTab() == NULL)
@@ -236,31 +249,61 @@ void BrowserMainWindow::slotCurrentChanged(int idx){
 
 
 void BrowserMainWindow::slotAddTask(){
-    if(currentTab() == NULL)
+    WebView *webView = currentTab();
+    if(webView == NULL)
         return;
+    QString curUrl = webView->url().toString();
+    QString title = webView->title();
 
-    QString url = "http://localhost/test/Yunflv/url.php?url=" + currentTab()->url().toString();
+    QString url = "http://localhost/test/Yunflv/url.php?url=" + curUrl;
 
-    qDebug()<<"slotAddTask:"<<url;
-    //QMessageBox::warning(this,"add url", url);
+    qDebug()<<"title"<< title<< "slotAddTask:"<<url;
+   // url = "http://localhost/test/Yunflv/url.php?url=http://tv.sohu.com/20140708/n401968741.shtml";
 
-    url = "http://localhost/test/Yunflv/url.php?url=http://tv.sohu.com/20140708/n401968741.shtml";
-
-//    NewDownloadInfoDialog *newDownloadUi = new NewDownloadInfoDialog(this, url);
-//    newDownloadUi->show();
-//    newDownloadUi->setLocalModel(localmodel);
-//    newDownloadUi->setDownLoader(mDownLoader);
-    //destroy(this);
+    BrowserApplication::downLoadUI()->openAddTaskDlg(title, url);
 }
 
 void BrowserMainWindow::slotDownLoadUI(){
-   // QMessageBox::warning(this, "download", "ui");
-    DownLoadUI *w = new DownLoadUI(this);
-    w->resize(800, 600);
-    w->move(200,100);
-    w->show();
+    BrowserApplication::downLoadUI()->show();
 }
 
+void BrowserMainWindow::doUpdateChk(){
+    qDebug() << "--doUpdateChk--";
+    RequestInfo* info1 = new RequestInfo();
+    info1->url = gUrlArr[UPGRADE_SELF];
+    info1->reqType = UPGRADE_SELF;
+    info1->callback = NULL;//&BrowserMainWindow::slotReqUgradeResult;
+
+    RequestInfo* info2 = new RequestInfo();
+    info2->url = gUrlArr[UPGRADE_DEVICE];
+    info2->reqType = UPGRADE_DEVICE;
+    info2->callback = NULL;//&BrowserMainWindow::slotReqUgradeResult;
+
+    m_request->addTask(info1);
+    m_request->addTask(info2);
+    qDebug() << "-=-=-=- end doUpdateChk-=-=-=";
+}
+
+void BrowserMainWindow::slotReqUgradeResult(REQ_TYPE type, QString str){
+    qDebug() << "--ReqUgradeResult:" << type <<", str: "<<str;
+
+    Xml_Parser_Upgrade *dp = new Xml_Parser_Upgrade(str);
+    dp->parser();
+    if(dp->isValid()){
+        qDebug() << dp->getUrl() << dp->getMd5() << dp->getDescription();
+
+        //弹框提示
+        //UpgradeTipDialog *dlg = new UpgradeTipDialog(this);
+        //dlg->setData(type, dp);
+
+        //???????????????????
+
+        //dlg->show();
+    }
+
+
+    //delete dlg;
+}
 
 
 //device >>
@@ -307,10 +350,6 @@ void BrowserMainWindow::slotOpenDevice(){
     if(mDevDlg->isHidden())
         mDevDlg->show();
 }
-
-
-
-
 
 
 //<<<<

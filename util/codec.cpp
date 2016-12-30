@@ -4,6 +4,7 @@
 #include <QProcess>
 #include <QTextCodec>
 
+//concat为 阻断执行， concat()合并完成后，该函数才结束
 Codec::Codec() :QObject(NULL)
 {
 
@@ -21,21 +22,22 @@ void Codec::setFileInfo(QString srcpath, QString filename){
     mFileName = filename;
 }
 
-bool Codec::concat(){
+//成功返回目标文件的路径
+QString Codec::concat(){
     //qDebug() << "concat";
     //1. 创建索引文件
-    mIdxFilePath = mSrcPath + mFileName + ".txt";
+    mIdxFilePath = mSrcPath + "idx_" + mFileName + ".txt";
     //qDebug() << mIdxFilePath;
 
     QFile f(mIdxFilePath);
     if(!f.open(QIODevice::WriteOnly | QIODevice::Text)){
-        return false;
+        return "";
     }
 
     //qDebug() << "write into file " << mIdxFilePath;
     QTextStream in(&f);
     QDir dir(mSrcPath);
-    QFileInfoList flist = dir.entryInfoList( QStringList()<< mFileName+"*.mp4", QDir::Files, QDir::Name);
+    QFileInfoList flist = dir.entryInfoList( QStringList()<< mFileName+"*", QDir::Files, QDir::Name);
     foreach(QFileInfo fi, flist){
         QString str = QDir::toNativeSeparators(fi.absoluteFilePath());
         mSegList << str;
@@ -45,6 +47,7 @@ bool Codec::concat(){
 
 
     //2.执行ffmpeg
+    QString outfile = mSrcPath+mFileName+".mp4";
      QProcess *p = new QProcess(this);
      connect(p, SIGNAL(readyRead()), this, SLOT(on_read()));
      connect(p,SIGNAL(finished(int)),this,SLOT(onFinished(int)));
@@ -52,7 +55,7 @@ bool Codec::concat(){
     //command = "qrc:/other/bin/ffmpeg.exe";
 
     QStringList args;
-    //args << "-loglevel" << "quiet" ;
+    args << "-loglevel" << "quiet" ;
     args << "-f" << "concat" ;
     args << "-safe" << "-1" << "-y";
 
@@ -61,20 +64,24 @@ bool Codec::concat(){
 
     args << "-bsf:a";
     args << "aac_adtstoasc";
-    args <<  mSrcPath+mFileName+".mp4";
+    args <<  outfile;
 
     p->start(command, args);
     p->execute(command, args);
     p->waitForFinished();
-    qDebug()<<QString::fromUtf8(p->readAllStandardError());//获取输出
+    //qDebug()<<QString::fromUtf8(p->readAllStandardError());//获取输出
 
-    return true;
+    QFile ff(outfile);
+    if(ff.exists() && ff.size()>0){
+        return outfile;
+    }
+    return "";
 }
 
 void Codec::onFinished(int v){
     qDebug()<<"--------- onFinished -------------";
     //清除
-    //removeTmp();
+    removeTmp();
 }
 
 void Codec::on_read(){

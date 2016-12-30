@@ -4,6 +4,7 @@
 
 //请求url列表。
 QString gUrlArr[] = {
+    "", //nothing
     "http://www.nybgjd.com/update/api2/handler?apk_vercode=&board=&android=&time=&upmode=&mac=00&brand=LEMOON&firmware=00.01.01&device=PiaPia", //UPGRADE_SELF
     "http://www.sohu.com"   //UPGRADE_DEVICE
 };
@@ -81,7 +82,7 @@ void HttpRequestor::slot_replyFinished(QObject* obj){
             i.value()->callback(i.value()->reqType, str);
 
         //信号发送
-        emit sig_onFinished(str/*, i.value()*/);
+        emit sig_onFinished(i.value()->reqType, str/*, i.value()*/);
 
 
         //--------------

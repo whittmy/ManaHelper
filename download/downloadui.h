@@ -50,22 +50,27 @@ public:
     //QStandardItemModel *model;
     modelDownloads *model;
     QSortFilterProxyModel *proxyModel;
-    DownloadsDBManager *dbMan;
+    DownloadsDBManager *_dbMan;
+    void clearCacheData();
+    void doCombine(int row, QString filename); //row为行号
+    void doStore(int row, QString filename);
+
+    void openAddTaskDlg(QString title, QString url);
 
 public slots:
 
     int UpdateInterface();
-    int ADownloadCompleted(QString);
+    int slotDownloadCompleted(const Download*);
 
     // 添加slots，运行中老是提示这些slot为定义
     //删除  moc_mainwindow.cpp文件，重新运行就ok了
     //DownLoader-relative slot
-    void updateUrlsTable(const Download*);
-    void submitUrlViewChanges();
-    void onDownloadResumed(const Download*);
-    void onDownloadRemoved(const QString &);
-    void onDownloadDoesNotExistToRemove(const QUuid &);
-    void onDownloadInited(const Download*);
+    void slotUpdateUrlsTable(const Download*);
+    void slotDownloadResumed(const Download*);
+    void slotDownloadRemoved(const Download*);
+    void slotDownloadInited(const Download*);
+    void slotDownloadFailed(const Download*);
+
 
 private slots:
     void on_actionAdd_New_triggered();
@@ -89,7 +94,7 @@ private slots:
     void on_actionAbout_triggered();
 
     void on_actionStop_Download_triggered();
-
+    //void slotTimer();
 protected:
 
 
@@ -99,13 +104,14 @@ private:
     void readSettings();
     void writeSettings();
 
-    void doUpdateChk();
-    static void ReqUgradeResult(REQ_TYPE type, QString str); //回调 静态
-    void openAddTaskDlg(QString url);
+
 private:
     Ui::DownLoadUI *ui;
     DownLoader* mDownLoader;
     LogMe* _logger;
+
+    qint64 mLastProgress;
+    qint64 mLastSpeed;
 };
 
 #endif // MAINWINDOW_H

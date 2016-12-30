@@ -40,14 +40,14 @@ public:
     explicit Download(QObject *parent = 0);
     ~Download();
 
-    bool newDownload(const int ID, const QUrl &url, const QUuid &uuid=QUuid(), const QString &fileName=QString());
+    bool newDownload(const int row, const int ID, const QUrl &url, const QUuid &uuid=QUuid(), const QString &fileName=QString(), qint64 size=0);
 
     void setFile(QFile *file);
     //QFile *file();
     bool bfileValid(){
         return _file!=0;
     }
-    QString fileName(){
+    QString fileName(){  //注意fileName与 name的区别，一个是文件本身名，一个是任务名
         if(_file != NULL)
             return _file->fileName();
         return QString();
@@ -110,10 +110,13 @@ public:
     QNetworkReply::NetworkError errorCode();
     QString errorStr();
 
+    qint64 _row;
+
+
 signals:
     void sig_onTaskAdded(Download* download);
 public slots:
-    void slot_onHttpReqFinished(QString result);
+    void slot_onHttpReqFinished(REQ_TYPE type, QString result);
     void slot_httpError(QNetworkReply::NetworkError err, QString str);
 
 private:

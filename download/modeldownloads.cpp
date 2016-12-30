@@ -4,11 +4,14 @@
 #include<QSqlDatabase>
 #include<QSqlError>
 #include "download/downloadconstants.h"
+#include "downloadsdbmanager.h"
 
-modelDownloads::modelDownloads(QObject *parent,QSqlDatabase db)
-:QSqlTableModel(parent,db),
+modelDownloads::modelDownloads(QObject *parent, DownloadsDBManager *dm)
+:QSqlTableModel(parent, dm->db),
 _logger(new LogMe(this))
 {
+    _dm = dm;
+
     //设置表名
     setTable("downloadsTable");
 
@@ -40,6 +43,7 @@ _logger(new LogMe(this))
 //data为重载函数，获取的数据即为view端显示的数据，显示可以与实际不同，在这儿处理下
 //data写的如果有问题，
 QVariant modelDownloads::data(const QModelIndex &index, int role) const  {
+
     //return QSqlTableModel::data(index, role);
 
     ////itemData以及会触发该data函数，
@@ -102,7 +106,7 @@ QVariant modelDownloads::data(const QModelIndex &index, int role) const  {
 
         if(col == DownloadConstants::Attributes::Size){
             //_logger->debug("data-size");
-            size = value.toInt();
+            size = value.toLongLong();
             unit = "";
             if(size < 1024){
                 unit = tr("bytes");
@@ -159,7 +163,7 @@ QVariant modelDownloads::data(const QModelIndex &index, int role) const  {
         }
         else if(col == DownloadConstants::Attributes::Status){
             //_logger->debug("data-status");
-            status = value.toInt();
+            status = value.toLongLong();
             return Status::transDownLoadString(status);
         }
     }
@@ -383,63 +387,69 @@ void modelDownloads::setURL(int row, QString URL, bool submit){
     if(submit) submitAll();
 }
 
-int modelDownloads::getDateAdded(int row){
+qint64 modelDownloads::getDateAdded(int row){
     _logger->debug(QString("getDateAdded:%1").arg(row));
-    return data(index(row,DownloadConstants::Attributes::AddedDate)).toInt();
+    return data(index(row,DownloadConstants::Attributes::AddedDate)).toLongLong();
 }
 
-void modelDownloads::setDateAdded(int row, int dateAdded, bool submit){
+void modelDownloads::setDateAdded(int row, qint64 dateAdded, bool submit){
     _logger->debug(QString("setDateAdded:%1,%2").arg(row).arg(dateAdded));
     setData(index(row,DownloadConstants::Attributes::AddedDate),dateAdded);
    if(submit)  submitAll();
 }
 
-int modelDownloads::getQueue(int row){
+qint64 modelDownloads::getQueue(int row){
     _logger->debug("getQueue,"+row);
-    return data(index(row,DownloadConstants::Attributes::Queue)).toInt();
+    return data(index(row,DownloadConstants::Attributes::Queue)).toLongLong();
 }
 
-void modelDownloads::setQueue(int row,int queue, bool submit){
+void modelDownloads::setQueue(int row,qint64 queue, bool submit){
     _logger->debug(QString("setQueue,%1,%2").arg(row).arg(queue));
     setData(index(row,DownloadConstants::Attributes::Queue),queue);
     if(submit) submitAll();
 }
 
-int modelDownloads::getSize(int row){
+qint64 modelDownloads::getSize(int row){
     _logger->debug(QString("getSize,%1").arg(row));
-    return data(index(row,DownloadConstants::Attributes::Size)).toInt();
+    //return data(index(row,DownloadConstants::Attributes::Size)).toLongLong();
+    return _dm->getSize(data(index(row,DownloadConstants::Attributes::ID)).toLongLong());
 }
 
-void modelDownloads::setSize(int row,int size, bool submit){
+void modelDownloads::setSize(int row,qint64 size, bool submit){
     _logger->debug(QString("setSize,%1,%2").arg(row).arg(size));
     setData(index(row,DownloadConstants::Attributes::Size),size);
     if(submit) submitAll();
 }
 
-int modelDownloads::getFinishedStatus(int row){
+qint64 modelDownloads::getFinishedStatus(int row){
     _logger->debug("getFinishedStatus,"+row);
-    return data(index(row,DownloadConstants::Attributes::Downloaded)).toInt();
+    return data(index(row,DownloadConstants::Attributes::Downloaded)).toLongLong();
 }
 
-void modelDownloads::setFinishedStatus(int row,int finishedStatus, bool submit){
+void modelDownloads::setFinishedStatus(int row,qint64 finishedStatus, bool submit){
     _logger->debug(QString("setFinishedStatus,%1,%2").arg(row).arg(finishedStatus));
     setData(index(row,DownloadConstants::Attributes::Downloaded),finishedStatus);
     if(submit) submitAll();
 }
 
-int modelDownloads::getStatus(int row){
-    _logger->debug("getStatus,"+row);
-    return data(index(row,DownloadConstants::Attributes::Status)).toInt();
+QString modelDownloads::getStatus(int row){
+    _logger->debug("getStatus,"+QString::number(row));
+    return data(index(row,DownloadConstants::Attributes::Status)).toString();
 }
 
-void modelDownloads::setStatus(int row, int status, bool submit){
+qint64 modelDownloads::getStatusOrg(int row){
+    qint64 id = data(index(row, DownloadConstants::Attributes::ID)).toLongLong();
+    return  _dm->getStatus(id);
+}
+
+void modelDownloads::setStatus(int row, qint64 status, bool submit){
     _logger->debug(QString("setStatus,%1,%2").arg(row).arg(status));
     setData(index(row,DownloadConstants::Attributes::Status),status);
     if(submit) submitAll();
 }
 
 QString modelDownloads::getTimeleft(int row){
-    _logger->debug("getTimeleft,"+row);
+    _logger->debug("getTimeleft,"+QString::number(row));
     return data(index(row,DownloadConstants::Attributes::RemainingTime)).toString();
 }
 
@@ -449,23 +459,24 @@ void modelDownloads::setTimeLeft(int row, QString timeleft, bool submit){
     if(submit) submitAll();
 }
 
-int modelDownloads::getTransferRate(int row){
+qint64 modelDownloads::getTransferRate(int row){
     _logger->debug("getTransferRate,"+row);
-    return data(index(row,DownloadConstants::Attributes::Speed)).toInt();
+    //return data(index(row,DownloadConstants::Attributes::Speed)).toLongLong();
+    return _dm->getTransferRate(data(index(row,DownloadConstants::Attributes::ID)).toLongLong());
 }
 
-void modelDownloads::setTransferRate(int row,int transferRate, bool submit){
+void modelDownloads::setTransferRate(int row,qint64 transferRate, bool submit){
     _logger->debug(QString("setTransferRate,%1,%2").arg(row).arg(transferRate));
     setData(index(row,DownloadConstants::Attributes::Speed),transferRate);
     if(submit) submitAll();
 }
 
-int modelDownloads::getLastTry(int row){
+qint64 modelDownloads::getLastTry(int row){
     _logger->debug("getLastTry,"+row);
-    return data(index(row,DownloadConstants::Attributes::LastTryDate)).toInt();
+    return data(index(row,DownloadConstants::Attributes::LastTryDate)).toLongLong();
 }
 
-void modelDownloads::setLastTry(int row,int lastry, bool submit){
+void modelDownloads::setLastTry(int row,qint64 lastry, bool submit){
     _logger->debug(QString("setLastTry,%1,%2").arg(row).arg(lastry));
     setData(index(row,DownloadConstants::Attributes::LastTryDate),lastry);
     if(submit) submitAll();
@@ -504,34 +515,34 @@ void modelDownloads::setReferer(int row,QString referer, bool submit){
     if(submit) submitAll();
 }
 
-int modelDownloads::getType(int row){
+qint64 modelDownloads::getType(int row){
     _logger->debug("getType,"+row);
-    return data(index(row,DownloadConstants::Attributes::Type)).toInt();
+    return data(index(row,DownloadConstants::Attributes::Type)).toLongLong();
 }
 
-void modelDownloads::setType(int row,int type, bool submit){
+void modelDownloads::setType(int row,qint64 type, bool submit){
     _logger->debug(QString("setType,%1,%2").arg(row).arg(type));
     setData(index(row,DownloadConstants::Attributes::Type),type);
     if(submit) submitAll();
 }
 
-int modelDownloads::getTimeElapsed(int row){
+qint64 modelDownloads::getTimeElapsed(int row){
     _logger->debug("getTimeElapsed,"+row);
-    return data(index(row,DownloadConstants::Attributes::ElapseTime)).toInt();
+    return data(index(row,DownloadConstants::Attributes::ElapseTime)).toLongLong();
 }
 
-void modelDownloads::setTimeElapsed(int row,int timeElapsed, bool submit){
+void modelDownloads::setTimeElapsed(int row,qint64 timeElapsed, bool submit){
     _logger->debug(QString("setTimeElapsed,%1,%2").arg(row).arg(timeElapsed));
     setData(index(row,DownloadConstants::Attributes::ElapseTime),timeElapsed);
     if(submit) submitAll();
 }
 
-int modelDownloads::getPieces(int row){
+qint64 modelDownloads::getPieces(int row){
     _logger->debug("getPieces,"+row);
-    return data(index(row,DownloadConstants::Attributes::Pieces)).toInt();
+    return data(index(row,DownloadConstants::Attributes::Pieces)).toLongLong();
 }
 
-void modelDownloads::setPieces(int row,int pieces, bool submit){
+void modelDownloads::setPieces(int row,qint64 pieces, bool submit){
     _logger->debug(QString("setPieces").arg(row).arg(pieces));
     setData(index(row,DownloadConstants::Attributes::Pieces),pieces);
     if(submit) submitAll();
@@ -549,24 +560,24 @@ void modelDownloads::setUuid(int row, QString &uuid, bool submit){
 }
 
 
-int modelDownloads::getID(int row){
-    _logger->debug("getID"+row);
-    return data(index(row, DownloadConstants::Attributes::ID)).toInt();
+qint64 modelDownloads::getID(int row){
+    _logger->debug(QString("getID-row=%1").arg(row));
+    return data(index(row, DownloadConstants::Attributes::ID)).toLongLong();
 }
 
-void modelDownloads::setID(int row, int ID, bool submit){
+void modelDownloads::setID(int row, qint64 ID, bool submit){
     _logger->debug(QString("setID,%1,%2").arg(row).arg(ID));
     setData(index(row,DownloadConstants::Attributes::ID), ID);
     if(submit)  submitAll();
 }
 
 
-int modelDownloads::getProgress(int row){
+qint64 modelDownloads::getProgress(int row){
     _logger->debug("getProgress "+row);
-    return data(index(row, DownloadConstants::Attributes::Progress)).toInt();
+    return data(index(row, DownloadConstants::Attributes::Progress)).toLongLong();
 }
 
-void modelDownloads::setProgress(int row, int progress, bool submit){
+void modelDownloads::setProgress(int row, qint64 progress, bool submit){
     _logger->debug(QString("setProgress,%1,%2").arg(row).arg(progress));
     setData(index(row, DownloadConstants::Attributes::Progress), progress);
     if(submit) submitAll();

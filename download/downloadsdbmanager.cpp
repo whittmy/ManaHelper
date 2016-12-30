@@ -18,7 +18,7 @@ DownloadsDBManager::DownloadsDBManager():_logger(new LogMe(this))
         QSqlQuery query(db);
         if(query.exec(QString("select count(*) cnt from sqlite_master where type='table' and name='downloadsTable'"))){
             query.first(); //!!!!!!
-            _logger->debug(QString("get table count = %1").arg(query.value(0).toInt()));
+            _logger->debug(QString("get table count = %1").arg(query.value(0).toLongLong()));
             _bDbValid = query.value(0).toBool();
             query.clear();
         }
@@ -70,24 +70,24 @@ void DownloadsDBManager::createDB(){
     if (this->openDB()) {
         QSqlQuery query(db); //获取db的查询接口
         QString createDBquery = "CREATE TABLE IF NOT EXISTS downloadsTable("
-                "id INTEGER  PRIMARY KEY AUTOINCREMENT,"
+                "id BIGINT  PRIMARY KEY AUTOINCREMENT,"
                 "filename VARCHAR(255) NOT NULL,"
                 "url VARCHAR(1024) NOT NULL,"
-                "size int,"
-                "progress int,"
-                "transferRate int,"
-                "elapsedTime int,"
+                "size BIGINT,"
+                "progress BIGINT,"
+                "transferRate BIGINT,"
+                "elapsedTime BIGINT,"
                 "timeleft varchar(30),"
                 "saveTo varchar(1024),"
-                "queue int,"
-                "status int,"
+                "queue BIGINT,"
+                "status BIGINT,"
                 "dateAdded BIGINT,"
-                "finished int,"
+                "finished BIGINT,"
                 "lastTry BIGINT,"
                 "description text,"
                 "referer varchar(1024),"
-                "type int,"
-                "pieces int,"
+                "type BIGINT,"
+                "pieces BIGINT,"
                 "uuid varchar(100)"
                 ")";
         qDebug()<< "sql:" << createDBquery;
@@ -114,7 +114,6 @@ void DownloadsDBManager::closeDB( ){
     _logger->debug("closeDB");
     db.close();
 }
-
 /*
 
 modelDownloads *DownloadsDBManager::queryDownloads(int status,int type,int queue){
@@ -169,26 +168,27 @@ modelDownloads *DownloadsDBManager::queryDownloads(int status,int type,int queue
     //model->data(model->index(0,3)).toDateTime().toString();
     QDateTime d;
     for(int col=0;col<model->columnCount();col++){ //时间信息整型改为QDateTime
-        model->setData(model->index(col,3),d.fromMSecsSinceEpoch(model->data(model->index(col,3)).toInt()).toString());
-        model->setData(model->index(col,10),d.fromMSecsSinceEpoch(model->data(model->index(col,10)).toInt()).toString());
+        model->setData(model->index(col,3),d.fromMSecsSinceEpoch(model->data(model->index(col,3)).toLongLong()).toString());
+        model->setData(model->index(col,10),d.fromMSecsSinceEpoch(model->data(model->index(col,10)).toLongLong()).toString());
     }
     //更新model中表的列名
     setHeaders(model);
     return model;
 }
+*/
 
 //为毛不让model自己去操作？？
 //执行后会有 关闭数据库
 int DownloadsDBManager::insertDownload(QString filename,QString url,QString loc,QString desc,
-                                       int cat=0,QString ref="",int queue=0,int pieces=10){
-    int dateAdded = QDateTime::currentMSecsSinceEpoch();
-    int size = 0; // make zero size by default
-    int finished=0; // set status to unfinished
+                                       qint64 cat=0,QString ref="",qint64 queue=0,qint64 pieces=10){
+    qint64 dateAdded = QDateTime::currentMSecsSinceEpoch();
+    qint64 size = 0; // make zero size by default
+    qint64 finished=0; // set status to unfinished
     QString status = "";
-    int timeleft=0;// trivial data set to zero
-    int transferRate=0;//trivial data set to zero
-    int lastTry= QDateTime::currentMSecsSinceEpoch(); // TODO :: it should be string
-    int elapsedTime =0;
+    qint64 timeleft=0;// trivial data set to zero
+    qint64 transferRate=0;//trivial data set to zero
+    qint64 lastTry= QDateTime::currentMSecsSinceEpoch(); // TODO :: it should be string
+    qint64 elapsedTime =0;
     //All data collected ....Now insert the download
 
     //QSqlDatabase db =  QSqlDatabase::addDatabase("QSQLITE");
@@ -199,7 +199,7 @@ int DownloadsDBManager::insertDownload(QString filename,QString url,QString loc,
         query.first();
         QString id = query.value(0).toString();
         QString insertDownloadquery = "INSERT INTO downloadsTable VALUES("
-                +QString::number(id.toInt() +1) +","
+                +QString::number(id.toLongLong() +1) +","
                 "'"+filename+"',"
                 "'"+url+"',"
                 +QString::number(dateAdded)+","
@@ -220,7 +220,7 @@ int DownloadsDBManager::insertDownload(QString filename,QString url,QString loc,
         if (query.exec(insertDownloadquery)){
             //qDebug() << "Download Added Successfully";
             this->closeDB();
-            return(query.lastInsertId().toInt());
+            return(query.lastInsertId().toLongLong());
         } else {
             QMessageBox::critical(0, qApp->tr("Cannot Insert Download...Something went wrong.."),
                                   query.lastError().text()+"\n id == "+id, QMessageBox::Cancel);
@@ -237,7 +237,7 @@ int DownloadsDBManager::insertDownload(QString filename,QString url,QString loc,
 
 //删除编号为id的记录
 //这里是直接通过query进行查询
-void DownloadsDBManager::deleteDownload(int id){
+void DownloadsDBManager::deleteDownload(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("DELETE FROM downloadsTable WHERE id =" +QString::number(id)+ ";");
@@ -260,8 +260,12 @@ void DownloadsDBManager::deleteDownload(int id){
 }
 
 
+
+
+
+//下面根据获取数据是根据列id进行检索的，不是row
 //START CRUD OPERATIONS////
-QString DownloadsDBManager::getFileName(int id){
+QString DownloadsDBManager::getFileName(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT filename from downloadsTable WHERE id =" +QString::number(id)+ ";");
@@ -278,11 +282,11 @@ QString DownloadsDBManager::getFileName(int id){
                               qApp->tr("Unable to establish a database connection.\n"
                                        "Click Cancel to exit."), QMessageBox::Cancel);
     }
-    ///this->closeDB();
-    return "undetermined";
+    //this->closeDB();
+    return "unknown";
 }
 
-void DownloadsDBManager::setFileName(int id, QString Filename){
+void DownloadsDBManager::setFileName(qint64 id, QString Filename){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET filename = '"+Filename+"' WHERE id =" +QString::number(id)+ ";");
@@ -300,7 +304,7 @@ void DownloadsDBManager::setFileName(int id, QString Filename){
     ///this->closeDB();
 }
 
-QString DownloadsDBManager::getURL(int id){
+QString DownloadsDBManager::getURL(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT url from downloadsTable WHERE id =" +QString::number(id)+ ";");
@@ -321,7 +325,7 @@ QString DownloadsDBManager::getURL(int id){
     return "unknown";
 }
 
-void DownloadsDBManager::setURL(int id, QString URL){
+void DownloadsDBManager::setURL(qint64 id, QString URL){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET url = '"+URL+"' WHERE id =" +QString::number(id)+ ";");
@@ -339,13 +343,13 @@ void DownloadsDBManager::setURL(int id, QString URL){
     ///this->closeDB();
 }
 
-int DownloadsDBManager::getDateAdded(int id){
+qint64 DownloadsDBManager::getDateAdded(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT dateAdded from downloadsTable WHERE id =" +QString::number(id)+ ";");
         if (query.exec()){
             query.first();
-            int dateAdded = query.value(0).toInt();
+            qint64 dateAdded = query.value(0).toLongLong();
             return dateAdded;
         } else {
             QMessageBox::critical(0, qApp->tr("Cannot get the date when the download was added."),
@@ -360,7 +364,7 @@ int DownloadsDBManager::getDateAdded(int id){
     return 0;
 }
 
-void DownloadsDBManager::setDateAdded(int id, int dateAdded){
+void DownloadsDBManager::setDateAdded(qint64 id, qint64 dateAdded){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET dateAdded = "+QString::number(dateAdded)+" WHERE id =" +QString::number(id)+ ";");
@@ -378,13 +382,13 @@ void DownloadsDBManager::setDateAdded(int id, int dateAdded){
     ///this->closeDB();
 }
 
-int DownloadsDBManager::getQueue(int id){
+qint64 DownloadsDBManager::getQueue(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT queue from downloadsTable WHERE id =" +QString::number(id)+ ";");
         if (query.exec()){
             query.first();
-            int queue = query.value(0).toInt();
+            qint64 queue = query.value(0).toLongLong();
             return queue;
         } else {
             QMessageBox::critical(0, qApp->tr("Cannot get the queue number."),
@@ -399,7 +403,7 @@ int DownloadsDBManager::getQueue(int id){
     return -1;
 }
 
-void DownloadsDBManager::setQueue(int id,int queue){
+void DownloadsDBManager::setQueue(qint64 id,qint64 queue){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET queue = "+QString::number(queue)+" WHERE id =" +QString::number(id)+ ";");
@@ -417,14 +421,16 @@ void DownloadsDBManager::setQueue(int id,int queue){
     ///this->closeDB();
 }
 
-int DownloadsDBManager::getSize(int id){
+qint64 DownloadsDBManager::getSize(qint64 id){
     if (this->openDB()) {
+        _logger->info(QString("dm-getsize, id=%1").arg(id));
         QSqlQuery query(db);
         query.prepare("SELECT size from downloadsTable WHERE id =" +QString::number(id)+ ";");
         if (query.exec()){
-            query.first();
-            int size = query.value(0).toInt();
-            return size;
+            if(query.next()){
+                return query.value(0).toLongLong();
+            }
+
         } else {
             QMessageBox::critical(0, qApp->tr("Cannot get the size of the file."),
                                   query.lastError().text(), QMessageBox::Cancel);
@@ -438,7 +444,7 @@ int DownloadsDBManager::getSize(int id){
     return 0;
 }
 
-void DownloadsDBManager::setSize(int id,int size){
+void DownloadsDBManager::setSize(qint64 id,qint64 size){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET size = "+QString::number(size)+" WHERE id =" +QString::number(id)+ ";");
@@ -456,13 +462,13 @@ void DownloadsDBManager::setSize(int id,int size){
     ///this->closeDB();
 }
 
-int DownloadsDBManager::getFinishedStatus(int id){
+qint64 DownloadsDBManager::getFinishedStatus(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT finished from downloadsTable WHERE id =" +QString::number(id)+ ";");
         if (query.exec()){
             query.first();
-            int fin = query.value(0).toInt();
+            qint64 fin = query.value(0).toLongLong();
             return fin;
         } else {
             QMessageBox::critical(0, qApp->tr("Cannot get the finished status."),
@@ -477,7 +483,7 @@ int DownloadsDBManager::getFinishedStatus(int id){
     return -1;
 }
 
-void DownloadsDBManager::setFinishedStatus(int id,int finishedStatus){
+void DownloadsDBManager::setFinishedStatus(qint64 id,qint64 finishedStatus){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET finished = "+QString::number(finishedStatus)+" WHERE id =" +QString::number(id)+ ";");
@@ -495,13 +501,13 @@ void DownloadsDBManager::setFinishedStatus(int id,int finishedStatus){
     ///this->closeDB();
 }
 
-QString DownloadsDBManager::getStatus(int id){
+qint64 DownloadsDBManager::getStatus(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT status from downloadsTable WHERE id =" +QString::number(id)+ ";");
         if (query.exec()){
             query.first();
-            QString status = query.value(0).toString();
+            qint64 status = query.value(0).toLongLong();
             return status;
         } else {
             QMessageBox::critical(0, qApp->tr("Cannot get status."),
@@ -513,13 +519,13 @@ QString DownloadsDBManager::getStatus(int id){
                                        "Click Cancel to exit."), QMessageBox::Cancel);
     }
     ///this->closeDB();
-    return "unknown";
+    return -1;
 }
 
-void DownloadsDBManager::setStatus(int id,QString status){
+void DownloadsDBManager::setStatus(qint64 id, qint64 status){
     if (this->openDB()) {
         QSqlQuery query(db);
-        query.prepare("UPDATE downloadsTable SET status = '"+status+"' WHERE id =" +QString::number(id)+ ";");
+        query.prepare("UPDATE downloadsTable SET status = "+QString::number(status)+" WHERE id =" +QString::number(id)+ ";");
         if (query.exec()){
             //success
         } else {
@@ -534,13 +540,13 @@ void DownloadsDBManager::setStatus(int id,QString status){
     ///this->closeDB();
 }
 
-int DownloadsDBManager::getTimeleft(int id){
+qint64 DownloadsDBManager::getTimeleft(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT timeleft from downloadsTable WHERE id =" +QString::number(id)+ ";");
         if (query.exec()){
             query.first();
-            int timeleft = query.value(0).toInt();
+            qint64 timeleft = query.value(0).toLongLong();
             return timeleft;
         } else {
             QMessageBox::critical(0, qApp->tr("Cannot get the time left."),
@@ -555,7 +561,7 @@ int DownloadsDBManager::getTimeleft(int id){
     return -1;
 }
 
-void DownloadsDBManager::setTimeLeft(int id,int timeleft){
+void DownloadsDBManager::setTimeLeft(qint64 id,qint64 timeleft){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET timeleft = "+QString::number(timeleft)+" WHERE id =" +QString::number(id)+ ";");
@@ -573,13 +579,13 @@ void DownloadsDBManager::setTimeLeft(int id,int timeleft){
     ///this->closeDB();
 }
 
-int DownloadsDBManager::getTransferRate(int id){
+qint64 DownloadsDBManager::getTransferRate(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT transferRate from downloadsTable WHERE id =" +QString::number(id)+ ";");
         if (query.exec()){
             query.first();
-            int rate = query.value(0).toInt();
+            qint64 rate = query.value(0).toLongLong();
             return rate;
         } else {
             QMessageBox::critical(0, qApp->tr("Cannot get transfer rate."),
@@ -594,7 +600,7 @@ int DownloadsDBManager::getTransferRate(int id){
     return 0;
 }
 
-void DownloadsDBManager::setTransferRate(int id,int transferRate){
+void DownloadsDBManager::setTransferRate(qint64 id,int transferRate){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET transferRate = "+QString::number(transferRate)+" WHERE id =" +QString::number(id)+ ";");
@@ -612,13 +618,13 @@ void DownloadsDBManager::setTransferRate(int id,int transferRate){
     ///this->closeDB();
 }
 
-int DownloadsDBManager::getLastTry(int id){
+qint64 DownloadsDBManager::getLastTry(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT lastTry from downloadsTable WHERE id =" +QString::number(id)+ ";");
         if (query.exec()){
             query.first();
-            int last = query.value(0).toInt();
+            qint64 last = query.value(0).toLongLong();
             return last;
         } else {
             QMessageBox::critical(0, qApp->tr("Cannot get the last try date."),
@@ -633,7 +639,7 @@ int DownloadsDBManager::getLastTry(int id){
     return 0;
 }
 
-void DownloadsDBManager::setLastTry(int id,int lastry){
+void DownloadsDBManager::setLastTry(qint64 id,qint64 lastry){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET lastTry = "+QString::number(lastry)+" WHERE id =" +QString::number(id)+ ";");
@@ -651,7 +657,7 @@ void DownloadsDBManager::setLastTry(int id,int lastry){
     ///this->closeDB();
 }
 
-QString DownloadsDBManager::getDescription(int id){
+QString DownloadsDBManager::getDescription(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT description from downloadsTable WHERE id =" +QString::number(id)+ ";");
@@ -669,10 +675,10 @@ QString DownloadsDBManager::getDescription(int id){
                                        "Click Cancel to exit."), QMessageBox::Cancel);
     }
     ///this->closeDB();
-    return "no description";
+    return "unknown";
 }
 
-void DownloadsDBManager::setDescription(int id,QString desc){
+void DownloadsDBManager::setDescription(qint64 id,QString desc){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET description = "+desc+" WHERE id =" +QString::number(id)+ ";");
@@ -690,7 +696,7 @@ void DownloadsDBManager::setDescription(int id,QString desc){
     ///this->closeDB();
 }
 
-QString DownloadsDBManager::getSaveLocation(int id){
+QString DownloadsDBManager::getSaveLocation(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT saveTo from downloadsTable WHERE id =" +QString::number(id)+ ";");
@@ -711,7 +717,7 @@ QString DownloadsDBManager::getSaveLocation(int id){
     return "";
 }
 
-void DownloadsDBManager::setSaveLocation(int id,QString saveLocation){
+void DownloadsDBManager::setSaveLocation(qint64 id,QString saveLocation){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET saveTo = '"+saveLocation+"' WHERE id =" +QString::number(id)+ ";");
@@ -729,7 +735,7 @@ void DownloadsDBManager::setSaveLocation(int id,QString saveLocation){
     ///this->closeDB();
 }
 
-QString DownloadsDBManager::getReferer(int id){
+QString DownloadsDBManager::getReferer(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT referer from downloadsTable WHERE id =" +QString::number(id)+ ";");
@@ -747,10 +753,10 @@ QString DownloadsDBManager::getReferer(int id){
                                        "Click Cancel to exit."), QMessageBox::Cancel);
     }
     ///this->closeDB();
-    return "";
+    return "unknown";
 }
 
-void DownloadsDBManager::setReferer(int id,QString referer){
+void DownloadsDBManager::setReferer(qint64 id,QString referer){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET referer = "+referer+" WHERE id =" +QString::number(id)+ ";");
@@ -768,13 +774,13 @@ void DownloadsDBManager::setReferer(int id,QString referer){
     ///this->closeDB();
 }
 
-int DownloadsDBManager::getType(int id){
+qint64 DownloadsDBManager::getType(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT type from downloadsTable WHERE id =" +QString::number(id)+ ";");
         if (query.exec()){
             query.first();
-            int type = query.value(0).toInt();
+            qint64 type = query.value(0).toLongLong();
             return type;
         } else {
             QMessageBox::critical(0, qApp->tr("Cannot get the type of the download."),
@@ -789,7 +795,7 @@ int DownloadsDBManager::getType(int id){
     return 0;
 }
 
-void DownloadsDBManager::setType(int id,int type){
+void DownloadsDBManager::setType(qint64 id,qint64 type){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET type = "+QString::number(type)+" WHERE id =" +QString::number(id)+ ";");
@@ -807,13 +813,13 @@ void DownloadsDBManager::setType(int id,int type){
     ///this->closeDB();
 }
 
-int DownloadsDBManager::getTimeElapsed(int id){
+qint64 DownloadsDBManager::getTimeElapsed(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT elapsedTime from downloadsTable WHERE id =" +QString::number(id)+ ";");
         if (query.exec()){
             query.first();
-            int elapsed = query.value(0).toInt();
+            qint64 elapsed = query.value(0).toLongLong();
             return elapsed;
         } else {
             QMessageBox::critical(0, qApp->tr("Cannot get the time elapsed."),
@@ -828,7 +834,7 @@ int DownloadsDBManager::getTimeElapsed(int id){
     return 0;
 }
 
-void DownloadsDBManager::setTimeElapsed(int id,int timeElapsed){
+void DownloadsDBManager::setTimeElapsed(qint64 id,qint64 timeElapsed){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET elapsedTime = "+QString::number(timeElapsed)+" WHERE id =" +QString::number(id)+ ";");
@@ -846,13 +852,13 @@ void DownloadsDBManager::setTimeElapsed(int id,int timeElapsed){
     ///this->closeDB();
 }
 
-int DownloadsDBManager::getPieces(int id){
+qint64 DownloadsDBManager::getPieces(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("SELECT pieces from downloadsTable WHERE id =" +QString::number(id)+ ";");
         if (query.exec()){
             query.first();
-            int p = query.value(0).toInt();
+            qint64 p = query.value(0).toLongLong();
             return p;
         } else {
             QMessageBox::critical(0, qApp->tr("Cannot get the size of the file."),
@@ -867,7 +873,8 @@ int DownloadsDBManager::getPieces(int id){
     return 0;
 }
 
-void DownloadsDBManager::setPieces(int id,int pieces){
+
+void DownloadsDBManager::setPieces(qint64 id,qint64 pieces){
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET pieces = "+QString::number(pieces)+" WHERE id =" +QString::number(id)+ ";");
@@ -885,4 +892,79 @@ void DownloadsDBManager::setPieces(int id,int pieces){
     ///this->closeDB();
 }
 
+QString DownloadsDBManager::getUuid(qint64 id){
+    if (this->openDB()) {
+        QSqlQuery query(db);
+        query.prepare("SELECT uuid from downloadsTable WHERE id =" +QString::number(id)+ ";");
+        if (query.exec()){
+            query.first();
+            QString ref = query.value(0).toString();
+            return ref;
+        } else {
+            QMessageBox::critical(0, qApp->tr("Cannot get referer."),
+                                  query.lastError().text(), QMessageBox::Cancel);
+        }
+    } else {
+        QMessageBox::critical(0, qApp->tr("Cannot open database"),
+                              qApp->tr("Unable to establish a database connection.\n"
+                                       "Click Cancel to exit."), QMessageBox::Cancel);
+    }
+    ///this->closeDB();
+    return "unknown";
+}
+
+void DownloadsDBManager::setUuid(qint64 id, QString uuid){
+    if (this->openDB()) {
+        QSqlQuery query(db);
+        query.prepare("UPDATE downloadsTable SET Uuid = "+uuid+" WHERE id =" +QString::number(id)+ ";");
+        if (query.exec()){
+            //success
+        } else {
+            QMessageBox::critical(0, qApp->tr("Cannot set the referer of the download."),
+                                  query.lastError().text(), QMessageBox::Cancel);
+        }
+    } else {
+        QMessageBox::critical(0, qApp->tr("Cannot open database"),
+                              qApp->tr("Unable to establish a database connection.\n"
+                                       "Click Cancel to exit."), QMessageBox::Cancel);
+    }
+}
+/*
+qint64 DownloadsDBManager::getID(qint64 id){
+    if (this->openDB()) {
+        QSqlQuery query(db);
+        query.prepare("SELECT ID from downloadsTable WHERE id =" +QString::number(id)+ ";");
+        if (query.exec()){
+            query.first();
+            qint64 p = query.value(0).toLongLong();
+            return p;
+        } else {
+            QMessageBox::critical(0, qApp->tr("Cannot get the size of the file."),
+                                  query.lastError().text(), QMessageBox::Cancel);
+        }
+    } else {
+        QMessageBox::critical(0, qApp->tr("Cannot open database"),
+                              qApp->tr("Unable to establish a database connection.\n"
+                                       "Click Cancel to exit."), QMessageBox::Cancel);
+    }
+    ///this->closeDB();
+    return 0;
+}
+
+void DownloadsDBManager::setID(qint64 id, qint64 id){
+    if (this->openDB()) {
+        QSqlQuery query(db);
+        query.prepare("UPDATE downloadsTable SET ID = "+QString::number(ID)+" WHERE id =" +QString::number(id)+ ";");
+        if (query.exec()){
+            //success
+        } else {
+            QMessageBox::critical(0, qApp->tr("Cannot set the number of pieces of the download."),
+                                  query.lastError().text(), QMessageBox::Cancel);
+        }
+    } else {
+        QMessageBox::critical(0, qApp->tr("Cannot open database"),
+                              qApp->tr("Unable to establish a database connection.\n"
+                                       "Click Cancel to exit."), QMessageBox::Cancel);
+    }
+}
 */

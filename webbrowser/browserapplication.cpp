@@ -78,6 +78,10 @@ HistoryManager *BrowserApplication::s_historyManager = 0;
 QNetworkAccessManager *BrowserApplication::s_networkAccessManager = 0;
 BookmarksManager *BrowserApplication::s_bookmarksManager = 0;
 
+//luokui>>
+DownLoadUI *BrowserApplication::s_downLoadui = 0;
+//<<
+
 static void setUserStyleSheet(QWebEngineProfile *profile, const QString &styleSheet, BrowserMainWindow *mainWindow = 0)
 {
     Q_ASSERT(profile);
@@ -190,6 +194,10 @@ BrowserApplication::~BrowserApplication()
     }
     delete s_networkAccessManager;
     delete s_bookmarksManager;
+
+    //luokui>>
+    delete s_downLoadui;
+    //<<
 }
 
 #if defined(Q_OS_OSX)
@@ -422,6 +430,8 @@ BrowserMainWindow *BrowserApplication::newMainWindow()
 {
     BrowserMainWindow *browser = new BrowserMainWindow();
     m_mainWindows.prepend(browser);
+    //最大化
+    browser->showMaximized();
     browser->show();
 
 
@@ -437,7 +447,8 @@ BrowserMainWindow *BrowserApplication::mainWindow()
     clean();
     if (m_mainWindows.isEmpty())
         newMainWindow();
-    return m_mainWindows[0];
+
+     return m_mainWindows[0];
 }
 
 void BrowserApplication::newLocalSocketConnection()
@@ -482,6 +493,17 @@ DownloadMgr *BrowserApplication::downloadManager()
     }
     return s_downloadManager;
 }
+
+//luokui >>
+DownLoadUI *BrowserApplication::downLoadUI(){
+    if(!s_downLoadui){
+        s_downLoadui = new DownLoadUI();
+        s_downLoadui->resize(800, 600);
+        s_downLoadui->move(200,100);
+    }
+    return s_downLoadui;
+}
+//<<<
 
 QNetworkAccessManager *BrowserApplication::networkAccessManager()
 {

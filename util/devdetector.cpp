@@ -132,6 +132,7 @@ bool DevDetector::adaptRules(QString drive){
 }
 
 bool DevDetector::nativeEvent(const QByteArray &eventType, void *message, long *result){
+    eventType;
     //_logger->info("begin nativeEvent");
     MSG* msg = reinterpret_cast<MSG*>(message);
     int msgType = msg->message;
@@ -172,7 +173,7 @@ bool DevDetector::nativeEvent(const QByteArray &eventType, void *message, long *
             }
             if(lpdb->dbch_devicetype = DBT_DEVTYP_DEVICEINTERFACE)
             {
-                PDEV_BROADCAST_DEVICEINTERFACE pDevInf  = (PDEV_BROADCAST_DEVICEINTERFACE)lpdb;
+                //PDEV_BROADCAST_DEVICEINTERFACE pDevInf  = (PDEV_BROADCAST_DEVICEINTERFACE)lpdb;
                 //qDebug()<< QString::fromUtf8("移除设备(name)：") << pDevInf->dbcc_name;
                 //qDebug()<< "移除设备(guid)：" << pDevInf->dbcc_classguid;
                 //qDebug()<< QString::fromUtf8("移除设备(size)：") << pDevInf->dbcc_size;

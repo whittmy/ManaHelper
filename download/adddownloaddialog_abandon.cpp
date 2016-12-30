@@ -28,7 +28,7 @@ void AddDownloadDialog_abandon::on_pushButton_2_clicked()
 void AddDownloadDialog_abandon::on_pushButton_clicked()
 {
     //
-    NewDownloadInfoDialog *newDownloadUi = new NewDownloadInfoDialog(this,ui->URLinput->text());
+    NewDownloadInfoDialog *newDownloadUi = new NewDownloadInfoDialog(this, "", ui->URLinput->text());
     newDownloadUi->show();
     newDownloadUi->setLocalModel(localmodel);
     newDownloadUi->setDownLoader(mDownLoader);

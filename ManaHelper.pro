@@ -54,7 +54,6 @@ SOURCES += \
     download/downloadpropertydialog.cpp \
     download/downloadingprogressdialog.cpp \
     download/downloadfinisheddialog.cpp \
-    download/networkaccessmanager.cpp \
     download/autosaver.cpp \
     download/download.cpp \
     download/downloadholder.cpp \
@@ -107,10 +106,7 @@ HEADERS  += \
     download/downloadpropertydialog.h \
     download/downloadingprogressdialog.h \
     download/downloadfinisheddialog.h \
-    download/networkaccessmanager.h \
     download/autosaver.h \
-    download/ui_proxy.h \
-    download/ui_passworddialog.h \
     download/download.h \
     download/downloadconstants.h \
     download/downloadholder.h \

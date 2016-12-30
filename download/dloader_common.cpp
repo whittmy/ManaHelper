@@ -8,11 +8,11 @@ DLoader_common* DLoader_common::mInstance = NULL;
  Usage:
 
  Step1:
-    Download *newDownload = new Download(this);
-    connect(newDownload, SIGNAL(sig_onTaskAdded(Download*)), this, SLOT(slot_onTaskAdded(Download*)));
+    Download *newDl = new Download(this);
+    connect(newDl, SIGNAL(sig_onTaskAdded(Download*)), this, SLOT(slot_onTaskAdded(Download*)));
 
     //当添加完成后，会自动触发slot_onTaskAdded函数
-    newDownload->newDownload(ID, url, uuid, fileName);
+    newDl->newDownload(ID, url, uuid, fileName);
 
  Step2:
     void DownLoader::slot_onTaskAdded(Download *download){
@@ -75,47 +75,54 @@ void DLoader_common::free(){
         delete mInstance;
 }
 
+//!!!!!!!!!!!! 绝不允许 某段文件出错的状况, 否则合并易出问题 !!!!!!!!!!!!!!!!!
+
 //新任务或者恢复下载，实际上相当于重新初始化任务的下载信息及状态
 //那在暂停等操作时，得清除指定任务的网络状态吧(如 reply的释放，hash信息的删除等)！！！
-void DLoader_common::doStart(Download* newDownload)
+void DLoader_common::doStart(Download* dl)
 {
-    _logger->info(QString("doStart for main-url: %1 ").arg(newDownload->url().toString()));
-    _logger->info(QString("curSeg:%1=>%2").arg(newDownload->getCurSegIdx()).arg(newDownload->getCurSegUrl().toString()));
+    _logger->info(QString("doStart for main-url: %1 ").arg(dl->url().toString()));
 
     _bUserInterupt = false;
 
+    //刷新界面
+    emit sg_dlUpdated(dl);
+
     //若所有段已下载完成,则任务完成
-    if(newDownload->bSegEnd()){
+    if(dl->bSegEnd()){
         _logger->info("end of seg, task-complated!!");
-        newDownload->status()->setDownloadStatus(Status::WaitCombine);
-        slot_httpFinished(newDownload);
+        dl->status()->setDownloadStatus(Status::WaitCombine);
+        slot_httpFinished(dl);
         return;
     }
 
-    if(!newDownload->bfileValid()){
+    if(!dl->bfileValid()){
         _logger->info("file is not valid...");
         exit(0);
     }
+
+    _logger->info(QString("curSeg:%1=>%2").arg(dl->getCurSegIdx()).arg(dl->getCurSegUrl().toString()));
+
     //这儿的断点续传的思路是，根据已下载的临时文件的大小作为断点，不用用自己记录的下载数据，可以避免数据不一致的麻烦。
     //取当前段url进行下载
-    //QNetworkRequest request(newDownload->url().toString());
+    //QNetworkRequest request(dl->url().toString());
 
-    newDownload->slot_httpError(QNetworkReply::NoError, "");//reset error flag
+    dl->slot_httpError(QNetworkReply::NoError, "");//reset error flag
 
-    QNetworkRequest request(newDownload->getCurSegUrl().toString());
-    _logger->info(QString("get-cur-seg_alreadybyte:%1").arg(newDownload->getFileSize()));
-    request.setRawHeader("Range", QByteArray("bytes=SIZE-").replace("SIZE", QVariant(newDownload->getFileSize()).toByteArray()));
+    QNetworkRequest request(dl->getCurSegUrl().toString());
+    _logger->info(QString("get-cur-seg_alreadybyte:%1").arg(dl->getFileSize()));
+    request.setRawHeader("Range", QByteArray("bytes=SIZE-").replace("SIZE", QVariant(dl->getFileSize()).toByteArray()));
 
-    //多段url，计算总文件大小是个难题
-    newDownload->status()->setFileAlreadyBytes(newDownload->getFileSize()/*newDownload->file()->size()*/);
+    //针对每段的数据统计，注意每个新段的开始，status的部分数据都应该重设
+    dl->status()->setSegFileAlreadyBytes(dl->getFileSize()/*dl->file()->size()*/);
 
     QNetworkReply *reply = _manager.get(request);
-    newDownload->status()->setDownloadStatus(Status::Starting);
+    dl->status()->setDownloadStatus(Status::Downloading);
 
     //将每一个reply-download, reply'url- download'status 关联。
     //目的是根据reply找到download的相关状态，这些reply的url对应download中的分段url(或其重定向)
-    QHash<QNetworkReply*, Download*>::iterator i = _downloadHash->insert(reply, newDownload);
-    QHash<QUrl, Status*>::iterator statusIt = _statusHash->insert(i.key()->url(), newDownload->status());
+    QHash<QNetworkReply*, Download*>::iterator i = _downloadHash->insert(reply, dl);
+    QHash<QUrl, Status*>::iterator statusIt = _statusHash->insert(i.key()->url(), dl->status());
 
     if (statusIt.value()->downloadMode() == Status::NewDownload) {
         emit sg_dlInitialed(i.value());
@@ -245,12 +252,13 @@ void DLoader_common::slot_replyMetaDataChanged(QObject *currentReply)
     Status *status = _statusHash->find(reply->url()).value();
     Download *download = i.value();
 
-    status->setSegInfo(download->getCurSegIdx(), download->getSegCnt());
-
     //文件总大小为粗略计算(第一段的大小*段数)，仅作显示用,不参与任何计算。
+    //这儿判断总大小是否为0也很重要，因为在任务启动时，默认也是要检查缓存，以此来推断总大小的
     if(status->bytesTotal() == 0 && download->getCurSegIdx()==0){
         status->setBytesTotal(size * download->getSegCnt());
     }
+
+    status->setSegInfo(download->getCurSegIdx(), download->getSegCnt());
 
     //对于当前段的大小，还是要设置的,便于统计当前段的进度
     //进度计算比较粗略，按照 段号-段数以及当前段的进度来计算,详见Status;
@@ -340,6 +348,8 @@ void DLoader_common::slot_httpFinished(QObject *currentReply)
     _logger->info("maybe pause!!!");
     download->closeFile();
     download->setFile(0);
+
+    emit sg_dlUpdated(download);
     //freeReplyInfo(i.key());
 
 

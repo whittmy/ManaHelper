@@ -21,9 +21,36 @@
 #include "paths.h"
 #include <QSettings>
 #include <QDir>
+#include <QMessageBox>
+#include <QTextStream>
+#include <QDebug>
 
 #define TRANSLATION_PATH "c:/"
 #define DOC_PATH "c:/"
+
+QHash<QString, QString> Paths::mDevPathHash;
+
+void Paths::init(){
+   mDevPathHash.insert("drawcourse", QStringLiteral(""));
+   mDevPathHash.insert("classic baby", QStringLiteral(""));
+   mDevPathHash.insert("pop baby", QStringLiteral(""));
+   mDevPathHash.insert("pop music", QStringLiteral(""));
+   mDevPathHash.insert("happy dance", QStringLiteral(""));
+   mDevPathHash.insert("do it", QStringLiteral(""));
+   mDevPathHash.insert("guo xue qi meng", QStringLiteral(""));
+   mDevPathHash.insert("cheng yu gu shi", QStringLiteral(""));
+   mDevPathHash.insert("shu li luo ji", QStringLiteral(""));
+   mDevPathHash.insert("bai ke zhi shi", QStringLiteral(""));
+   mDevPathHash.insert("tang shi song ci", QStringLiteral(""));
+   mDevPathHash.insert("dong hua pian", QStringLiteral(""));
+   mDevPathHash.insert("shi pin er ge", QStringLiteral(""));
+
+   mDevPathHash.insert("shi pin gu shi", QStringLiteral(""));
+   mDevPathHash.insert("shi pin ying yu", QStringLiteral(""));
+
+
+}
+
 QString Paths::translationPath()
 {
     return  STRINGIFY(TRANSLATION_PATH);
@@ -45,4 +72,24 @@ QString Paths::cacheDirPath()
 //    settings.endGroup();
     QString savePath = "c:\\qt_test\\";
     return savePath;
+}
+
+
+void Paths::writeTxtFile(QString filepath, QString txt){
+    QFile file(filepath);
+    //方式：Append为追加，WriteOnly，ReadOnly
+    if (!file.open(QIODevice::WriteOnly|QIODevice::Text)) {
+        QMessageBox::critical(NULL, "提示", "无法创建文件");
+        return;
+    }
+    QTextStream out(&file);
+    out << txt;
+    out.flush();
+    file.close();
+    //注意写入方式的选择，注意写完后的关闭操作！
+}
+
+
+QString Paths::devicePath(QString txt){
+     return "";
 }
