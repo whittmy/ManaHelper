@@ -5,6 +5,7 @@
 #include <QDebug>
 
 QString DevDetector::_devPath = "";
+QString DevDetector::_devVer = "";
 
 static const GUID GUID_DEVINTERFACE_LIST[] =
 {
@@ -72,6 +73,9 @@ QString DevDetector::getDevPath(){
     return _devPath;
 }
 
+QString DevDetector::getDevVer(){
+    return  _devVer;
+}
 
 void DevDetector::checkDev(){
     //遍历所有驱动器

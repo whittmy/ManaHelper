@@ -11,5 +11,6 @@
         <file>download.png</file>
         <file>refresh.png</file>
         <file>device.png</file>
+        <file>addtask.png</file>
     </qresource>
 </RCC>

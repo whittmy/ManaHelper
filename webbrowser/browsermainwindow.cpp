@@ -70,12 +70,14 @@
 #include <QWebEngineProfile>
 #include <QWebEngineSettings>
 
+#include <QMessageBox>
 #include <QtCore/QDebug>
 #include "download/downloadui.h"
 #include "download/newdownloadinfodialog.h"
 
 #include "util/xml_parser_upgrade.h"
 #include "download/upgradetipdialog.h"
+#include "util/devdetector.h"
 
 
 extern QString gUrlArr[];
@@ -111,7 +113,9 @@ BrowserMainWindow::BrowserMainWindow(QWidget *parent, Qt::WindowFlags flags)
     ,_devdetector(new DevDetector((HANDLE)this->winId(), this))
     ,mDevDlg(new DevManagerDialog(this))
     ,m_request(new HttpRequestor(this))
+    ,s_downLoadui(new DownLoadUI(this))
 {
+
     setToolButtonStyle(Qt::ToolButtonFollowStyle);
     setAttribute(Qt::WA_DeleteOnClose, true);
     statusBar()->setSizeGripEnabled(true);
@@ -202,7 +206,7 @@ BrowserMainWindow::BrowserMainWindow(QWidget *parent, Qt::WindowFlags flags)
     initDeviceMonitor();
 
 //    //升级检查
-    doUpdateChk();
+    //doUpdateChk();
 }
 
 //luokui the last tab closed, call this function,
@@ -247,43 +251,64 @@ void BrowserMainWindow::slotCurrentChanged(int idx){
     qDebug() << "slotCurrentChanged:" << m_addtask->isEnabled();
 }
 
+QString filterTitle(QString title){
+    int pos;
+    //1. delete string behind "在线"
+    pos = title.lastIndexOf(QStringLiteral("在线"));
+    if(pos > 0){
+        title = title.mid(0,  pos);
+    }
+
+    //2.
+    pos = title.lastIndexOf("- AcFun");
+    qDebug() << title << ","<<pos << ", "<<title.length();
+    if(pos > 0)
+        title = title.mid(0, pos);// title.left(title.length() - pos);  //中英文混合时，用left计算不正确
+
+    //3.
+    pos = title.lastIndexOf("_bilibili");
+    if(pos > 0)
+        title = title.mid(0, pos);
+    return title;
+}
 
 void BrowserMainWindow::slotAddTask(){
     WebView *webView = currentTab();
     if(webView == NULL)
         return;
     QString curUrl = webView->url().toString();
+
     QString title = webView->title();
+    //对title进行简单过来处理
+    title = filterTitle(title);
 
     QString url = "http://localhost/test/Yunflv/url.php?url=" + curUrl;
 
     qDebug()<<"title"<< title<< "slotAddTask:"<<url;
    // url = "http://localhost/test/Yunflv/url.php?url=http://tv.sohu.com/20140708/n401968741.shtml";
 
-    BrowserApplication::downLoadUI()->openAddTaskDlg(title, url);
+    s_downLoadui->openAddTaskDlg(title, url);
 }
 
 void BrowserMainWindow::slotDownLoadUI(){
-    BrowserApplication::downLoadUI()->show();
+    //s_downLoadui->resize(800, 600);
+    //s_downLoadui->move(200,100);
+    s_downLoadui->show();
 }
 
 void BrowserMainWindow::doUpdateChk(){
     qDebug() << "--doUpdateChk--";
+    //自升级优先检测
     RequestInfo* info1 = new RequestInfo();
-    info1->url = gUrlArr[UPGRADE_SELF];
+    info1->url = (gUrlArr[UPGRADE_SELF]).arg(QCoreApplication::applicationVersion());
     info1->reqType = UPGRADE_SELF;
     info1->callback = NULL;//&BrowserMainWindow::slotReqUgradeResult;
-
-    RequestInfo* info2 = new RequestInfo();
-    info2->url = gUrlArr[UPGRADE_DEVICE];
-    info2->reqType = UPGRADE_DEVICE;
-    info2->callback = NULL;//&BrowserMainWindow::slotReqUgradeResult;
-
     m_request->addTask(info1);
-    m_request->addTask(info2);
+
     qDebug() << "-=-=-=- end doUpdateChk-=-=-=";
 }
 
+//请求的过程是优先自检测，完成之后才进行 设备固件检测
 void BrowserMainWindow::slotReqUgradeResult(REQ_TYPE type, QString str){
     qDebug() << "--ReqUgradeResult:" << type <<", str: "<<str;
 
@@ -292,17 +317,40 @@ void BrowserMainWindow::slotReqUgradeResult(REQ_TYPE type, QString str){
     if(dp->isValid()){
         qDebug() << dp->getUrl() << dp->getMd5() << dp->getDescription();
 
-        //弹框提示
-        //UpgradeTipDialog *dlg = new UpgradeTipDialog(this);
-        //dlg->setData(type, dp);
+        //升级框提示(自升级与设备升级都经过这儿)
+        UpgradeTipDialog dlg(this);
+        dlg.setData(type, dp);
+        if(dlg.exec() == QDialog::Accepted){
+            if(type == UPGRADE_SELF){
+                if(DevDetector::getDevPath().isEmpty())
+                    return;
 
-        //???????????????????
+                RequestInfo* info2 = new RequestInfo();
+                info2->url = (gUrlArr[UPGRADE_DEVICE]).arg(DevDetector::getDevVer());
+                info2->reqType = UPGRADE_DEVICE;
+                info2->callback = NULL;//&BrowserMainWindow::slotReqUgradeResult;
+                m_request->addTask(info2);
+            }
+            else if(type == UPGRADE_DEVICE){
+                //nothing...
+            }
+        }
+    }
+    else{
+        //have no upgrade-info, start to device-firmware detect
+        if(type == UPGRADE_SELF){
+            if(DevDetector::getDevPath().isEmpty())
+                return;
 
-        //dlg->show();
+            RequestInfo* info2 = new RequestInfo();
+            info2->url = (gUrlArr[UPGRADE_DEVICE]).arg(DevDetector::getDevVer());
+            info2->reqType = UPGRADE_DEVICE;
+            info2->callback = NULL;//&BrowserMainWindow::slotReqUgradeResult;
+            m_request->addTask(info2);
+        }
     }
 
 
-    //delete dlg;
 }
 
 
@@ -377,6 +425,8 @@ BrowserMainWindow::~BrowserMainWindow()
 {
     m_autoSaver->changeOccurred();
     m_autoSaver->saveIfNeccessary();
+
+    delete s_downLoadui;
 }
 
 void BrowserMainWindow::loadDefaultState()
@@ -736,7 +786,7 @@ void BrowserMainWindow::setupToolBar()
     //luokui add-task
     m_addtask = new QAction(this);
     m_addtask->setDisabled(true);
-    m_addtaskIcon = QIcon(QLatin1String(":download.png"));
+    m_addtaskIcon = QIcon(QLatin1String(":addtask.png"));
     m_addtask->setIcon(m_addtaskIcon);
     m_navigationBar->addAction(m_addtask);
     connect(m_addtask, SIGNAL(triggered()), this, SLOT(slotAddTask()));

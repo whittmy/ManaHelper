@@ -5,6 +5,7 @@
 #include<QFileDialog>
 #include <QSettings>
 #include<QMessageBox>
+#include "util/paths.h"
 
 //设置url的一些下载属性
 NewDownloadInfoDialog::NewDownloadInfoDialog(QWidget *parent, QString title, QString UrlInput) :
@@ -12,20 +13,18 @@ NewDownloadInfoDialog::NewDownloadInfoDialog(QWidget *parent, QString title, QSt
     ui(new Ui::NewDownloadInfoDialog)
 {
     ui->setupUi(this);
+    QString key = "在线";
 
-    ui->urlinput->setText(UrlInput);
+    int pos = title.lastIndexOf(key);
+    title = title.left(title.length() - pos);
+
     ui->_lableTitle->setText(title);
-    ui->descriptionEdit->setFocus();
 
-    QSettings settings;
-    switch(ui->categoryBox->currentIndex()){ //分类索引对应 保存路径。
-    case 0: ui->SaveToEdit->setText(settings.value("generalDirectory").toString());break;
-    case 1: ui->SaveToEdit->setText(settings.value("compressedDirectory").toString());break;
-    case 2: ui->SaveToEdit->setText(settings.value("documentDirectory").toString());break;
-    case 3: ui->SaveToEdit->setText(settings.value("musicDirectory").toString());break;
-    case 4: ui->SaveToEdit->setText(settings.value("programDirectory").toString());break;
-    case 5: ui->SaveToEdit->setText(settings.value("videoDirectory").toString());break;
-    }
+    _title = title;
+    _url = UrlInput;
+    _path = Paths::devicePath(ui->categoryBox->currentText());\
+
+    qDebug() <<"NewDownloadInfoDialog: title="<< _title <<", url="<<_url<<", path=" <<_path;
 }
 
 
@@ -37,15 +36,15 @@ NewDownloadInfoDialog::~NewDownloadInfoDialog()
 
 
 //设置保存路径，点击事件， 打开系统文件对话框，选中后更新 SaveToEdit控件的内容。
-void NewDownloadInfoDialog::on_browseSaveToButton_clicked() {
-    //browse to change Saveto
-    QFileDialog filedialog(this);
-    filedialog.setFileMode(filedialog.Directory);
-    QStringList seldir;
-    if(filedialog.exec())
-        seldir = filedialog.selectedFiles();
-    ui->SaveToEdit->setText(seldir.first());
-}
+//void NewDownloadInfoDialog::on_browseSaveToButton_clicked() {
+//    //browse to change Saveto
+//    QFileDialog filedialog(this);
+//    filedialog.setFileMode(filedialog.Directory);
+//    QStringList seldir;
+//    if(filedialog.exec())
+//        seldir = filedialog.selectedFiles();
+//    //ui->SaveToEdit->setText(seldir.first());
+//}
 
 //cancel
 void NewDownloadInfoDialog::on_pushButton_4_clicked()
@@ -56,22 +55,19 @@ void NewDownloadInfoDialog::on_pushButton_4_clicked()
 // 更新记录到, 先更新记录到model中,返回行号
 int NewDownloadInfoDialog::insertANewDownload(){
     //采集相关信息，更新这条记录到model中
-    QString url = ui->urlinput->text();
+    QFileInfo fileInfo(QUrl(_url).path());
 
-    QFileInfo fileInfo(QUrl(url).path());
+    if(_title.isEmpty())
+       _title = fileInfo.fileName();
 
-    QString filename =  ui->_lableTitle->text();
-    if(filename.isEmpty())
-       filename = fileInfo.fileName();
-
-    QString loc = ui->SaveToEdit->text();
-    QString desc = ui->descriptionEdit->toPlainText();
+    QString loc = _path;
+    QString desc = "";
     int cat = ui->categoryBox->currentIndex();
     QString ref = "";
     int queue = 0;
     int pieces = 10;
     QString uuid = QUuid::createUuid().toString();
-    int newrow = _model->insertDownload(filename, url, loc,desc,cat,ref,queue,pieces,uuid);
+    int newrow = _model->insertDownload(_title, _url, loc,desc,cat,ref,queue,pieces,uuid);
     return newrow;
 }
 
@@ -86,17 +82,17 @@ void NewDownloadInfoDialog::on_pushButton_2_clicked()
 //分类事件-触发，更新-刷新界面路径信息
 void NewDownloadInfoDialog::on_categoryBox_currentIndexChanged(int index)
 {
-    qDebug()<< ui->categoryBox->currentText();
+    //qDebug()<< ui->categoryBox->currentText();
 
-    QSettings settings;
-    switch(index){
-    case 0: ui->SaveToEdit->setText(settings.value("generalDirectory").toString());break;
-    case 1: ui->SaveToEdit->setText(settings.value("compressedDirectory").toString());break;
-    case 2: ui->SaveToEdit->setText(settings.value("documentDirectory").toString());break;
-    case 3: ui->SaveToEdit->setText(settings.value("musicDirectory").toString());break;
-    case 4: ui->SaveToEdit->setText(settings.value("programDirectory").toString());break;
-    case 5: ui->SaveToEdit->setText(settings.value("videoDirectory").toString());break;
-    }
+//    QSettings settings;
+//    switch(index){
+//    case 0: ui->SaveToEdit->setText(settings.value("generalDirectory").toString());break;
+//    case 1: ui->SaveToEdit->setText(settings.value("compressedDirectory").toString());break;
+//    case 2: ui->SaveToEdit->setText(settings.value("documentDirectory").toString());break;
+//    case 3: ui->SaveToEdit->setText(settings.value("musicDirectory").toString());break;
+//    case 4: ui->SaveToEdit->setText(settings.value("programDirectory").toString());break;
+//    case 5: ui->SaveToEdit->setText(settings.value("videoDirectory").toString());break;
+//    }
 }
 
 void NewDownloadInfoDialog::setDownLoader(DownLoader *dl){

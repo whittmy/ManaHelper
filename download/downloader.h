@@ -57,7 +57,7 @@ signals:
     void downloadFailed(const Download *download);
 
 public slots:
-    void slot_onTaskAdded(Download *download);
+    void slot_onTaskAdded(const Download *download);
 
 private:
 

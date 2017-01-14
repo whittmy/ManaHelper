@@ -56,7 +56,12 @@ public:
     void doStore(int row, QString filename);
 
     void openAddTaskDlg(QString title, QString url);
+    void setColumWidth();
 
+    void clearCacheByName(QString fileName);
+    void clearCacheOnStart();
+
+    void initWindowInfo();
 public slots:
 
     int UpdateInterface();
@@ -70,7 +75,7 @@ public slots:
     void slotDownloadRemoved(const Download*);
     void slotDownloadInited(const Download*);
     void slotDownloadFailed(const Download*);
-
+    void slotTimerOut();
 
 private slots:
     void on_actionAdd_New_triggered();
@@ -83,7 +88,6 @@ private slots:
 
     void on_actionProperties_triggered();
     void on_actionDownload_Now_triggered();
-    //void on_DownloadsTable_clicked(const QModelIndex &index);
     void on_actionRemove_triggered();
     void on_actionHide_Categories_triggered();
     void on_categoriesTree_customContextMenuRequested(const QPoint &pos);
@@ -93,8 +97,10 @@ private slots:
     void on_actionDelete_All_Completed_triggered();
     void on_actionAbout_triggered();
 
-    void on_actionStop_Download_triggered();
-    //void slotTimer();
+    void on_actionPause_Download_triggered();
+
+
+    void on_DownloadsTable_clicked(const QModelIndex &index);
 protected:
 
 
@@ -103,7 +109,8 @@ private:
     void setDefaultSettings();
     void readSettings();
     void writeSettings();
-
+    void _updateInterfaceByStatus(int status);
+    void resetBtnStatus();
 
 private:
     Ui::DownLoadUI *ui;
@@ -112,6 +119,8 @@ private:
 
     qint64 mLastProgress;
     qint64 mLastSpeed;
+
+    QTimer *mTimer;
 };
 
 #endif // MAINWINDOW_H

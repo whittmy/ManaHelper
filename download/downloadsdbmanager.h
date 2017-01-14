@@ -7,8 +7,8 @@ class DownloadsDBManager :public QObject
 {
     Q_OBJECT
 public:
-    DownloadsDBManager();
     ~DownloadsDBManager();
+    static DownloadsDBManager* Instance();
     QSqlDatabase db;
     void createDB();
 
@@ -21,9 +21,12 @@ public:
     modelDownloads *queryDownloads(int status,int type,int queue);
 */
 
+    void initStartUpStatus(); //初始化启动状态，即启动时将所有非常规状态(如Idle、Downloading)置为暂停
+
+
     int insertDownload(QString filename,QString url,QString loc,QString desc,qint64 cat,QString ref,qint64 queue,qint64 pieces);
     void deleteDownload(qint64 id);
-
+    QSet<QString> getFileNameListDownloading();
 
     //CRUD OPERATIONS
     QString getFileName(qint64 id);
@@ -78,12 +81,17 @@ public:
     QString getUuid(qint64 id);
     void setUuid(qint64 id, QString uuid);
 
+    qint64 getProgress(qint64 id);
+    void setProgress(qint64 id,qint64 progress);
+
 //    int getID(qint64 id);
 //    void setID(qint64 id, qint64 id);
     //CRUD OPERATIONS END
 
 private:
-
+    DownloadsDBManager();
+private:
+    static DownloadsDBManager  *_instance;
     LogMe *_logger;
     bool _bDbValid;
 

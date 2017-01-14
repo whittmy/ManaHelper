@@ -7,6 +7,17 @@
 #include <QSqlError>
 #include <QMessageBox>
 #include <download/modeldownloads.h>
+#include "downloadconstants.h"
+#include "status.h"
+#include "util/paths.h"
+
+
+DownloadsDBManager  *DownloadsDBManager:: _instance = NULL;
+DownloadsDBManager* DownloadsDBManager::Instance(){
+    if(_instance == NULL)
+        _instance = new DownloadsDBManager();
+    return _instance;
+}
 
 DownloadsDBManager::DownloadsDBManager():_logger(new LogMe(this))
 {
@@ -40,7 +51,7 @@ bool DownloadsDBManager::isDbValid(){
 //如果数据库未打开，则创建并打开
 bool DownloadsDBManager::openDB()
 {
-    _logger->debug("openDB");
+    //_logger->debug("openDB");
 
     if(!db.isOpen()){
     // Find QSLite driver
@@ -70,7 +81,7 @@ void DownloadsDBManager::createDB(){
     if (this->openDB()) {
         QSqlQuery query(db); //获取db的查询接口
         QString createDBquery = "CREATE TABLE IF NOT EXISTS downloadsTable("
-                "id BIGINT  PRIMARY KEY AUTOINCREMENT,"
+                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
                 "filename VARCHAR(255) NOT NULL,"
                 "url VARCHAR(1024) NOT NULL,"
                 "size BIGINT,"
@@ -114,8 +125,9 @@ void DownloadsDBManager::closeDB( ){
     _logger->debug("closeDB");
     db.close();
 }
-/*
 
+
+/*
 modelDownloads *DownloadsDBManager::queryDownloads(int status,int type,int queue){
     //QSqlDatabase db =  QSqlDatabase::addDatabase("QSQLITE");
 
@@ -261,7 +273,25 @@ void DownloadsDBManager::deleteDownload(qint64 id){
 
 
 
-
+QSet<QString> DownloadsDBManager::getFileNameListDownloading(){
+    QSet<QString> files;
+    if(this->openDB()){
+        QSqlQuery query(db);
+        query.prepare("SELECT filename from downloadsTable WHERE status !=" +QString::number(Status::Finished)+ ";");
+        if(query.exec()){
+            while(query.next()){
+                QString name = query.value(0).toString();
+                files.insert(Paths::filter(name)); //处理
+            }
+        }
+    }
+    else{
+        QMessageBox::critical(0, qApp->tr("Cannot open database"),
+                              qApp->tr("Unable to establish a database connection.\n"
+                                       "Click Cancel to exit."), QMessageBox::Cancel);
+    }
+    return files;
+}
 
 //下面根据获取数据是根据列id进行检索的，不是row
 //START CRUD OPERATIONS////
@@ -618,6 +648,47 @@ void DownloadsDBManager::setTransferRate(qint64 id,int transferRate){
     ///this->closeDB();
 }
 
+
+qint64 DownloadsDBManager::getProgress(qint64 id){
+    if (this->openDB()) {
+        QSqlQuery query(db);
+        query.prepare("SELECT progress from downloadsTable WHERE id =" +QString::number(id)+ ";");
+        if (query.exec()){
+            query.first();
+            qint64 progress = query.value(0).toLongLong();
+            return progress;
+        } else {
+            QMessageBox::critical(0, qApp->tr("Cannot get the progress."),
+                                  query.lastError().text(), QMessageBox::Cancel);
+        }
+    } else {
+        QMessageBox::critical(0, qApp->tr("Cannot open database"),
+                              qApp->tr("Unable to establish a database connection.\n"
+                                       "Click Cancel to exit."), QMessageBox::Cancel);
+    }
+    ///this->closeDB();
+    return 0;
+}
+
+void DownloadsDBManager::setProgress(qint64 id,qint64 progress){
+    if (this->openDB()) {
+        QSqlQuery query(db);
+        query.prepare("UPDATE downloadsTable SET progress = "+QString::number(progress)+" WHERE id =" +QString::number(id)+ ";");
+        if (query.exec()){
+            //success
+        } else {
+            QMessageBox::critical(0, qApp->tr("Cannot set the progress of the download."),
+                                  query.lastError().text(), QMessageBox::Cancel);
+        }
+    } else {
+        QMessageBox::critical(0, qApp->tr("Cannot open database"),
+                              qApp->tr("Unable to establish a database connection.\n"
+                                       "Click Cancel to exit."), QMessageBox::Cancel);
+    }
+    ///this->closeDB();
+}
+
+
 qint64 DownloadsDBManager::getLastTry(qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);
@@ -929,6 +1000,38 @@ void DownloadsDBManager::setUuid(qint64 id, QString uuid){
                                        "Click Cancel to exit."), QMessageBox::Cancel);
     }
 }
+
+
+
+void DownloadsDBManager::initStartUpStatus(){
+    if (this->openDB()) {
+        QSqlQuery query(db);
+        QString sql ="UPDATE downloadsTable SET status = "+QString::number(Status::Paused)+"  WHERE status =" + QString::number(Status::Downloading)
+                        +" or status="+ QString::number(Status::Idle) + ";";
+        //qDebug() << sql;
+        query.prepare(sql);
+        if (query.exec()){
+            //success
+            sql = "UPDATE downloadsTable SET transferRate=-1";
+            query.prepare(sql);
+            if(query.exec()){
+                sql = "delete from downloadsTable where status="+QString::number(Status::Finished);
+                query.prepare(sql);
+                query.exec();
+            }
+        } else {
+            QMessageBox::critical(0, qApp->tr("Cannot initStartUpStatus."),
+                                  query.lastError().text(), QMessageBox::Cancel);
+        }
+    } else {
+        QMessageBox::critical(0, qApp->tr("Cannot open database"),
+                              qApp->tr("Unable to establish a database connection.\n"
+                                       "Click Cancel to exit."), QMessageBox::Cancel);
+    }
+}
+
+
+
 /*
 qint64 DownloadsDBManager::getID(qint64 id){
     if (this->openDB()) {

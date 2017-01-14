@@ -4,6 +4,13 @@
 #include <QProcess>
 #include <QTextCodec>
 
+/*  Usage:
+    Codec c;
+    c.setFileInfo(srcpath, filename);
+    c.concat();
+*/
+
+
 //concat为 阻断执行， concat()合并完成后，该函数才结束
 Codec::Codec() :QObject(NULL)
 {
@@ -30,20 +37,23 @@ QString Codec::concat(){
     //qDebug() << mIdxFilePath;
 
     QFile f(mIdxFilePath);
-    if(!f.open(QIODevice::WriteOnly | QIODevice::Text)){
-        return "";
+    if(!f.exists() || f.size() <= 0){
+        if(!f.open(QIODevice::WriteOnly | QIODevice::Text)){
+            return "";
+        }
+
+        //qDebug() << "write into file " << mIdxFilePath;
+        QTextStream in(&f);
+        QDir dir(mSrcPath);
+        QFileInfoList flist = dir.entryInfoList( QStringList()<< mFileName+"*", QDir::Files, QDir::Name);
+        foreach(QFileInfo fi, flist){
+            QString str = QDir::toNativeSeparators(fi.absoluteFilePath());
+            mSegList << str;
+            in << QString("file '%1'\n").arg(str);
+        }
+        f.close();
     }
 
-    //qDebug() << "write into file " << mIdxFilePath;
-    QTextStream in(&f);
-    QDir dir(mSrcPath);
-    QFileInfoList flist = dir.entryInfoList( QStringList()<< mFileName+"*", QDir::Files, QDir::Name);
-    foreach(QFileInfo fi, flist){
-        QString str = QDir::toNativeSeparators(fi.absoluteFilePath());
-        mSegList << str;
-        in << QString("file '%1'\n").arg(str);
-    }
-    f.close();
 
 
     //2.执行ffmpeg
@@ -55,7 +65,7 @@ QString Codec::concat(){
     //command = "qrc:/other/bin/ffmpeg.exe";
 
     QStringList args;
-    args << "-loglevel" << "quiet" ;
+  //  args << "-loglevel" << "quiet" ;
     args << "-f" << "concat" ;
     args << "-safe" << "-1" << "-y";
 
@@ -69,7 +79,7 @@ QString Codec::concat(){
     p->start(command, args);
     p->execute(command, args);
     p->waitForFinished();
-    //qDebug()<<QString::fromUtf8(p->readAllStandardError());//获取输出
+    qDebug()<<QString::fromUtf8(p->readAllStandardError());//获取输出
 
     QFile ff(outfile);
     if(ff.exists() && ff.size()>0){
@@ -99,12 +109,13 @@ bool Codec::removeTmp(){
     //删除索引文件
     QFile f(mIdxFilePath);
     if(f.exists()){
+        qDebug() << "remove idxfile:" << mIdxFilePath;
         f.remove();
 
         //删除分段文件
         foreach (QString str, mSegList) {
-            QFile f(str);
-            f.remove();
+            qDebug() << "remove tmp :" << str;
+            QFile(str).remove();
         }
     }
 

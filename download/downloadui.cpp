@@ -5,9 +5,12 @@
 #include <QFileInfoList>
 #include <QFileInfo>
 #include <QDir>
+#include <QDesktopWidget>
+
 #include "util/paths.h"
 
 #include "util/codec.h"
+
 
 
 DownLoadUI::DownLoadUI(QWidget *parent) :
@@ -18,16 +21,26 @@ DownLoadUI::DownLoadUI(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    _dbMan = new DownloadsDBManager();
+    //隐藏菜单
+    ui->menuBar->hide();
+
+    mTimer = new QTimer();
+    connect(mTimer, SIGNAL(timeout()), this, SLOT(slotTimerOut()));
+
+    //设置定时器每个多少毫秒发送一个timeout()信号
+    mTimer->setInterval(1000);
+
+
+    _dbMan = DownloadsDBManager::Instance();
     checkFirstRun();
     readSettings();
     model = new modelDownloads(this,_dbMan);
 
     //////////////////////////////////////////////
-    //启动时暂停所有任务状态。!!!
+    //启动时暂停所有下载中(downloading/idle)的任务状态。!!!
+    //且清除 已完成的任务(现阶段避免累计过大数据量，假设用户不原因自己删除)
+    _dbMan->initStartUpStatus();
     //////////////////////////////////////////////
-
-
 
 
     //设定右侧下载列表QTableView 的数据模型
@@ -51,7 +64,13 @@ DownLoadUI::DownLoadUI(QWidget *parent) :
     ui->DownloadsTable->hideColumn(DownloadConstants::Attributes::ElapseTime);
     ui->DownloadsTable->hideColumn(DownloadConstants::Attributes::RemainingTime);
     ui->DownloadsTable->hideColumn(DownloadConstants::Attributes::LastTryDate);
-    ui->DownloadsTable->resizeColumnsToContents();
+    ui->DownloadsTable->hideColumn(DownloadConstants::Attributes::Queue);
+    ui->DownloadsTable->hideColumn(DownloadConstants::Attributes::Downloaded);
+    ui->DownloadsTable->hideColumn(DownloadConstants::Attributes::Description);
+    ui->DownloadsTable->hideColumn(DownloadConstants::Attributes::Type);
+    //ui->DownloadsTable->horizontalHeader()->setStretchLastSection(false);//关键
+    setColumWidth();
+    //ui->DownloadsTable->resizeColumnsToContents();
 
     //signal-slot of DownLoader
     connect(mDownLoader, SIGNAL(downloadInitialed(const Download*)), this, SLOT(slotDownloadInited(const Download*)));
@@ -65,11 +84,78 @@ DownLoadUI::DownLoadUI(QWidget *parent) :
     connect(mDownLoader, SIGNAL(downloadFailed(const Download*)), this, SLOT(slotDownloadFailed(const Download*)));
 
 
-
-
-
     clearCacheData();
 
+    //启动定时器
+    mTimer->start();
+
+    //设置窗口界面默认的一些状态
+    initWindowInfo();
+}
+
+
+void DownLoadUI::initWindowInfo(){
+    int w = 1180;
+    int h = 580;
+    //setWindowFlags(Qt::WindowMinimizeButtonHint); // 设置禁止最大化
+    setFixedSize(w, h); // 禁止改变窗口大小。
+
+    QDesktopWidget* desktop = QApplication::desktop(); // =qApp->desktop();也可以
+    move((desktop->width()-w)/2, (desktop->height()-h)/2-30);
+
+}
+
+void DownLoadUI::resetBtnStatus(){
+    _logger->info("resetBtnStatus");
+    ui->actionAdd_New->setEnabled(false);
+    ui->actionProperties->setEnabled(false);
+    ui->actionQuit->setEnabled(false);
+    ui->actionDownload_Now->setEnabled(false);
+    ui->actionRemove->setEnabled(false);
+    ui->actionRedownload->setEnabled(false);
+    ui->actionPause_Download->setEnabled(false);
+}
+
+void DownLoadUI::setColumWidth(){
+    ui->DownloadsTable->setColumnWidth(DownloadConstants::Attributes::FileName, 250);
+    ui->DownloadsTable->setColumnWidth(DownloadConstants::Attributes::Size, 95);
+    ui->DownloadsTable->setColumnWidth(DownloadConstants::Attributes::Progress, 90);
+    ui->DownloadsTable->setColumnWidth(DownloadConstants::Attributes::Speed, 110);
+    ui->DownloadsTable->setColumnWidth(DownloadConstants::Attributes::Status, 95);
+    ui->DownloadsTable->setColumnWidth(DownloadConstants::Attributes::SavePath, 170);
+}
+
+void DownLoadUI::slotTimerOut(){
+    //刷新之前记录选择状态，以备恢复，避免刷新中选择不了条目
+    //step1
+    selectionModel = ui->DownloadsTable->selectionModel();
+    QModelIndexList selected = selectionModel->selectedIndexes();
+
+    QTreeWidgetItem *currentCol = ui->categoriesTree->currentItem(); //获取当前选中的item
+    //user selected a parent category
+    QString parentCat = currentCol->text(ui->categoriesTree->currentColumn());
+    int statusCat;
+    if(parentCat.compare("Unfinished")==0){
+        statusCat= -1 ;//only unfinished
+    }else if(parentCat.compare("Finished")==0){
+        statusCat = 0;
+    }
+    model->setFilterDownloads(statusCat);
+
+
+   // model->refrushModel();
+
+    //step2
+    if(!selected.isEmpty()){
+        //_logger->debug("reset1");
+        int i = 0;
+        foreach(const QModelIndex&index, selected){
+            //_logger->debug(QString("reset %1").arg(i++));
+            selectionModel->select(index,QItemSelectionModel::Select);
+        }
+    }
+
+    //ui->DownloadsTable->resizeColumnsToContents();
 }
 
 DownLoadUI::~DownLoadUI()
@@ -77,13 +163,22 @@ DownLoadUI::~DownLoadUI()
     delete ui;
     delete _logger;
     delete mDownLoader;
-    //delete _timer;
+    delete mTimer;
+}
+
+//注意内定slot的格式(const QModelIndex &index, 一点儿异样都允许)
+void DownLoadUI::on_DownloadsTable_clicked(const QModelIndex &index){
+    _logger->info("slotDownloadTabitemClicked row:" + QString::number(index.row()));
+
+    resetBtnStatus();
+    _updateInterfaceByStatus(model->getStatusOrg(index.row()));
 }
 
 //清缓存是必须做的，
 //两个方面：1.清理所有已完成任务的缓存数据；2.遍历缓存缓存目录，查找所有残留的文件
 void DownLoadUI::clearCacheData(){
     _logger->info("------------DownLoadUI::clearCacheData-------------");
+    clearCacheOnStart();
 }
 
 //action_Add
@@ -213,7 +308,6 @@ void DownLoadUI::readSettings()
     QSize size = settings.value("size", QSize(400, 400)).toSize();
     resize(size);
     move(pos);
-
 }
 
 //保存窗口相关参数
@@ -235,44 +329,6 @@ void DownLoadUI::setDefaultSettings(){
     settings.setValue("showDownloadsCompleteDialog",true);
     settings.setValue("EnableSounds",true);
     //general end
-
-    //saveto start
-    QDir defaultLocation = QDir::home();
-    defaultLocation.cd("Downloads");
-    settings.setValue("generalDirectory",defaultLocation.path());
-
-    defaultLocation.cd("Compressed");
-    settings.setValue("compressedDirectory",defaultLocation.path());
-
-    defaultLocation.cd("..");
-    defaultLocation.cd("Documents");
-
-    settings.setValue("documentDirectory",defaultLocation.path());
-
-    defaultLocation.cd("..");
-    defaultLocation.cd("Music");
-
-    settings.setValue("musicDirectory",defaultLocation.path());
-
-    defaultLocation.cd("..");
-    defaultLocation.cd("Programs");
-
-    settings.setValue("programDirectory",defaultLocation.path());
-
-    defaultLocation.cd("..");
-    defaultLocation.cd("Video");
-
-    settings.setValue("videoDirectory",defaultLocation.path());
-    //saveto end
-
-    //categories start
-    QString compressedExtensions= "zip rar r0* r1* arj gz sit sitx sea ace bz2 7z tar";
-    settings.setValue("CompressedFileExtensions",compressedExtensions);
-    settings.setValue("DocumentsFileExtensions","doc pdf ppt pps odt");
-    settings.setValue("MusicFileExtensions","mp3 wav wma mpa ram ra aac aif m4a");
-    settings.setValue("ProgramsExtensions","exe msi deb bin rpm run ");
-    settings.setValue("VideoFileExtensions","avi mpg mpe mpeg asf wmv mov qt rm mp4 flv m4v webm ogv ogg");
-    //categories end
 
     //network start
     settings.beginGroup(QLatin1String("proxy"));
@@ -298,30 +354,7 @@ void DownLoadUI::checkFirstRun(){
     bool firstRun = settings.value("firstRun",true).toBool();
     if(firstRun || !_dbMan->isDbValid()){
         _logger->debug("-=-=-= is first run -=-=-");
-        QDir defaultLocation = QDir::home();
-        if(!defaultLocation.cd("Downloads")){
-            defaultLocation.mkdir("Downloads");
-            defaultLocation.cd("Downloads");
-        }
 
-        if(!defaultLocation.exists("Compressed")){
-            defaultLocation.mkdir("Compressed");
-        }
-
-        if(!defaultLocation.exists("Documents")){
-            defaultLocation.mkdir("Documents");
-        }
-
-        if(!defaultLocation.exists("Music")){
-            defaultLocation.mkdir("Music");
-        }
-
-        if(!defaultLocation.exists("Programs")){
-            defaultLocation.mkdir("Programs");
-        }
-        if(!defaultLocation.exists("Video")){
-            defaultLocation.mkdir("Video");
-        }
         //设置默认值
         setDefaultSettings();
 
@@ -335,13 +368,13 @@ void DownLoadUI::checkFirstRun(){
 //选项对话框(非模态，可以同时打开多个)
 void DownLoadUI::on_actionOptions_triggered()
 {
-    _logger->debug("on_actionOptions_triggered");
-    OptionsDialog *optionsUi = new OptionsDialog;
-    optionsUi->show();
+//    _logger->debug("on_actionOptions_triggered");
+//    OptionsDialog *optionsUi = new OptionsDialog;
+//    optionsUi->show();
 }
 
-void DownLoadUI::on_actionStop_Download_triggered(){
-    _logger->debug("on_actionStop_Download_triggered");
+void DownLoadUI::on_actionPause_Download_triggered(){
+    _logger->debug("on_actionPause_Download_triggered");
     selectionModel= ui->DownloadsTable->selectionModel();//QItemSelectionModel, 返回当前选择的model
     QModelIndexList indexes = selectionModel->selectedRows(); //获取当前选择行的的model’index的列表， QModelIndexList
     foreach (QModelIndex index, indexes) { //遍历, 取最后一个？？
@@ -355,81 +388,25 @@ void DownLoadUI::on_actionStop_Download_triggered(){
 //左侧分类item选中变化联动实现，实际就是操作model的过程，数据变化带动
 void DownLoadUI::on_categoriesTree_itemSelectionChanged(){
     _logger->debug("on_categoriesTree_itemSelectionChanged");
+    resetBtnStatus();
     int statusCat=-1; //parent-cata-idx
-    int typeCat=-1; // child-cata-idx
-    int queueCat=-1; //queque-cata-idx
+
     QTreeWidgetItem *currentCol = ui->categoriesTree->currentItem(); //获取当前选中的item
-    QTreeWidgetItem *currentColP = ui->categoriesTree->currentItem()->parent(); //当前item的父item(组),若顶层则为NULL
-    if(currentColP){ //父存在，则当前选中子item
-        //parent exist, so user is in subcategory
-        QString parentCat = currentColP->text(ui->categoriesTree->currentColumn()); //获取某item指定列(当前)的字符串
-        if(parentCat.compare("All downloads")==0){
-             statusCat=-1;//any
-        }else if(parentCat.compare("Unfinished")==0){
-            statusCat=0;//only unfinished
-        }else if(parentCat.compare("Finished")==0){
-            statusCat = 1;
-        }else if(parentCat.compare("Queues")==0){
-            statusCat = 0;//unfinished
-        }
+    //user selected a parent category
+    QString parentCat = currentCol->text(ui->categoriesTree->currentColumn());
 
-        QString childCat = currentCol->text(ui->categoriesTree->currentColumn());
-        typeCat =-1;//any
-        queueCat =-1;
-        if(childCat.compare("Compressed")==0){
-            typeCat =1;//1 for compressed
-        }else if(childCat.compare("Documents")==0){
-            typeCat =2;//2 for documents
-        }
-        else if(childCat.compare("Music")==0){
-            typeCat =3;//3 for music
-        }
-        else if(childCat.compare("Programs")==0){
-            typeCat =4;//4 for programs
-        }
-        else if(childCat.compare("Video")==0){
-            typeCat =5;//5 for video
-        }
-        else if(childCat.compare("Main Queue")==0){
-            queueCat=0;//0 for main queue
-            statusCat = 0;//unfinished
-        }
-        else if(childCat.compare("Queue #1")==0){
-            queueCat=1;//1 for queue 1
-            statusCat = 0;//unfinished
-        }
-        else if(childCat.compare("Queue #2")==0){
-            queueCat=2;//2 for queue 2
-            statusCat = 0;//unfinished
-        }
-        else if(childCat.compare("Queue #3")==0){
-            queueCat=3;//3 for queue 3
-            statusCat = 0;//unfinished
-        }
-        //依据各选择类过滤符合的条目
-        model->setFilterDownloads(statusCat,typeCat,queueCat);
-    }else {
-        //user selected a parent category
-        QString parentCat = currentCol->text(ui->categoriesTree->currentColumn());
-        if(parentCat.compare("All downloads")==0){
-             statusCat=-1;//any
-        }else if(parentCat.compare("Unfinished")==0){
-            statusCat=0;//only unfinished
-        }else if(parentCat.compare("Finished")==0){
-            statusCat = 1;
-        }else if(parentCat.compare("Queues")==0){
-            statusCat = 0;//unfinished
-        }
-        model->setFilterDownloads(statusCat,typeCat,queueCat);
+    if(parentCat.compare("Unfinished")==0){
+        statusCat= -1 ;//only unfinished
+    }else if(parentCat.compare("Finished")==0){
+        statusCat = 0;
     }
-//    ui->DownloadsTable->hideColumn(0);
-//    ui->DownloadsTable->hideColumn(4);
-//    ui->DownloadsTable->hideColumn(6);
-//    ui->DownloadsTable->hideColumn(14);
+    model->setFilterDownloads(statusCat);
 
+
+    setColumWidth();
     //model变化带动view变化
     //重新调整各列的大小，依据 hint
-    ui->DownloadsTable->resizeColumnsToContents();
+    //ui->DownloadsTable->resizeColumnsToContents();
 }
 
 //这在启动时执行，监听待添加的url，
@@ -465,9 +442,45 @@ int DownLoadUI::AddUrlToAddDialog(QString Url){
 }
 
 // 主要依据选中的条目，更新界面上工具栏的按钮状态。
+void DownLoadUI::_updateInterfaceByStatus(int status){
+    ui->actionRemove->setEnabled(true);
+
+    switch(status){
+    case Status::Downloading:
+        ui->actionDownload_Now->setEnabled(false);
+        ui->actionPause_Download->setEnabled(true);
+        break;
+
+
+    case Status::Idle:
+    case Status::Failed:
+        ui->actionDownload_Now->setEnabled(true);
+        ui->actionPause_Download->setEnabled(false);
+        break;
+
+    case Status::Paused:
+        ui->actionDownload_Now->setEnabled(true);
+        ui->actionPause_Download->setEnabled(false);
+        break;
+
+    case Status::WaitCombine:
+    case Status::WaitTrans:
+    case Status::WaitStore:
+        ui->actionDownload_Now->setEnabled(true);
+        ui->actionPause_Download->setEnabled(false);
+        break;
+
+    case Status::Finished:
+        ui->actionDownload_Now->setEnabled(false);
+        ui->actionPause_Download->setEnabled(false);
+        break;
+
+    }
+}
+
 int DownLoadUI::UpdateInterface(){
     _logger->debug("UpdateInterface");
-    ui->DownloadsTable->resizeColumnsToContents();
+    //ui->DownloadsTable->resizeColumnsToContents();
     selectionModel= ui->DownloadsTable->selectionModel();//QItemSelectionModel, 返回当前选择的model
     QModelIndexList indexes = selectionModel->selectedRows(); //获取当前选择行的的model’index的列表， QModelIndexList
     QModelIndex index;
@@ -476,53 +489,17 @@ int DownLoadUI::UpdateInterface(){
         row = index.row(); // row-index: int type
     }
 
+    if(row == -1)
+        return 0;
     //QModelIndex， model->index(row, column)获取指定行、列的modelindex， 用model->data(modelindex)便可获取其值。
     //int finished = model->data(model->index(row,DownloadConstants::Attributes::Downloaded)).toInt();
-    int finished = model->getFinishedStatus(row);
-    _logger->info("finished="+finished);
-    if(finished==0){
-        ui->actionDownload_Now->setEnabled(true); //如果未完成，立即下载按钮 激活
-    }else if(finished ==1){
-        ui->actionDownload_Now->setEnabled(false); //若干下载完成，则 下载、停止按钮 禁止。
-        ui->actionStop_Download->setEnabled(false);
-    }
 
     // index-7 代表下载状态，
     //QString value = model->data(model->index(row,7)).toString();
     qint64 value = model->getStatusOrg(row);
     _logger->info(QString("status=%1").arg(Status::transDownLoadString(value)));
 
-    switch(value){
-    case Status::Downloading:
-        ui->actionDownload_Now->setEnabled(false);
-        ui->actionStop_Download->setEnabled(true);
-        break;
-
-
-    case Status::Idle:
-        break;
-    case Status::Failed:
-        ui->actionDownload_Now->setEnabled(true);
-        ui->actionStop_Download->setEnabled(false);
-        break;
-    case Status::Paused:
-        ui->actionDownload_Now->setEnabled(true);
-        ui->actionStop_Download->setEnabled(false);
-        break;
-
-    case Status::WaitCombine:
-        break;
-    case Status::WaitTrans:
-        break;
-    case Status::WaitStore:
-        break;
-
-    case Status::Finished:
-        ui->actionDownload_Now->setEnabled(false);
-         ui->actionStop_Download->setEnabled(false);
-        break;
-
-    }
+    _updateInterfaceByStatus(value);
 
     //update the downloadsTableView
     //this->on_categoriesTree_itemSelectionChanged();
@@ -585,11 +562,12 @@ void DownLoadUI::on_actionDownload_Now_triggered()
             mDownLoader->start(row, ID, url, uuid, filename, size);
             return;
 
+        //顺序执行
         case Status::WaitCombine:
             doCombine(row, filename);
-            return;
+
         case Status::WaitTrans:
-            break;
+
         case Status::WaitStore:
             doStore(row, filename);
             return;
@@ -603,9 +581,37 @@ int DownLoadUI::slotDownloadCompleted(const Download *download){
     _logger->debug("ADownloadCompleted");
     //更新状态
     model->setStatus(download->_row, Status::WaitCombine);
-    slotUpdateUrlsTable(download);
 
-    TrayIcon->showMessage("Download Completed",download->name(),QSystemTrayIcon::Information,5000);
+    //slotUpdateUrlsTable(download);
+
+    if(download->bfileValid()){
+        ((Download*)download)->closeFile();
+        ((Download*)download)->setFile(0);
+    }
+
+    QString name = Paths::filter(download->name());
+
+    //begin to combine
+    if(download->getSegCnt() == 1){
+        QDir dir(Paths::cacheDirPath());
+        QFileInfoList flist = dir.entryInfoList( QStringList()<< name+"*",
+                                                 QDir::Files, QDir::Name|QDir::Reversed);
+        foreach(QFileInfo p, flist){
+            QFile(p.absoluteFilePath()).rename(Paths::cacheDirPath() + name + ".mp4"); //rename 一定要全路径
+            model->setStatus(download->_row, Status::WaitStore);
+            break;
+        }
+    }
+    else{
+        Codec c;
+        c.setFileInfo(Paths::cacheDirPath(), name);
+        if(!c.concat().isEmpty())
+            model->setStatus(download->_row, Status::WaitStore);
+    }
+
+
+
+    TrayIcon->showMessage("Download Completed", download->name(), QSystemTrayIcon::Information, 5000);
     if(isHidden()){
         if(!TrayIcon->blinking)
             TrayIcon->setBlink(true);
@@ -696,22 +702,85 @@ void DownLoadUI::doCombine(int row, QString filename){
 }
 
 //删除按钮
-//model中要删除指定的记录
+//model中要删除指定的记录, 要删暂停！！！！！！
 void DownLoadUI::on_actionRemove_triggered()
 {
     _logger->debug("on_actionRemove_triggered");
     selectionModel= ui->DownloadsTable->selectionModel();
-    QModelIndexList indexes = selectionModel->selectedRows();
-    QModelIndex index;
+    QModelIndexList indexes = selectionModel->selectedRows(DownloadConstants::Attributes::ID);//DownloadConstants::Attributes::FileName
     int row = -1;
     int reply = QMessageBox::question(this,"Confirm","Do you really want to delete these " +QString::number(indexes.count()) +" download(s)?",QMessageBox::Yes , QMessageBox::No);
     if(reply == QMessageBox::Yes){
-        foreach (index, indexes) { //循环遍历
-            row = index.row();
+        //顺序遍历会出问题的
+//        foreach (QModelIndex index, indexes) { //循环遍历
+//            row = index.row();
+//            qDebug() << "del row: " <<row << ",data=" << model->data(index);
+//            model->deleteDownload(row);
+//        }
+
+        //需要逆向遍历，否则删除前面后，就直接影响行的变化，导致出错。
+        QList<QModelIndex>::iterator iter = indexes.end();
+        iter --;
+        while(iter >= indexes.begin()){
+            row = (*iter).row();
+            QString name = Paths::filter(model->getFileName(row));
+            QString uuid = model->getUuid(row);
+
+
+            //1. pause it,
+            mDownLoader->pause(uuid);
+            qDebug() << "del row: " <<row << ",name=" << name << ", uuid=" << uuid;
+
+            //2. delete
             model->deleteDownload(row);
+
+            //3. clear cache
+            clearCacheByName(name); //过滤
+            iter --;
         }
     }
 }
+
+void DownLoadUI::clearCacheOnStart(){
+    _logger->info("enter clearCacheOnStart");
+    //获取所有下载中的文件名
+    QSet<QString> names = _dbMan->getFileNameListDownloading();
+    qDebug() << names;
+
+    //遍历缓存目录， 删除不在“下载中”中的文件
+    QDir dir(Paths::cacheDirPath());
+    QFileInfoList flist = dir.entryInfoList(QDir::Files);
+    foreach(QFileInfo p, flist){
+        QString filename = p.fileName();
+        int pos = filename.lastIndexOf("_mmh");
+        if(pos != -1)
+            filename = filename.mid(0, pos);
+
+        if(!names.contains(filename)){
+            _logger->info("delete cache file:" + filename);
+            QFile(p.absoluteFilePath()).remove();
+        }
+    }
+
+}
+
+void DownLoadUI::clearCacheByName(QString fileName){
+    _logger->info("into clearCacheByName: "+ fileName);
+    QString cachePath = Paths::cacheDirPath();
+    QDir dir(cachePath);
+    //按名字逆序排列，获取最后一个片段的状态(片段是一个接一个按顺序下载，一个完成后才进行下一个片段)
+    QFileInfoList flist = dir.entryInfoList( QStringList()<< fileName+"*",
+                                             QDir::Files, QDir::Name|QDir::Reversed);
+    foreach(QFileInfo p, flist){
+        _logger->info("remove file "+p.fileName());
+        QFile(p.absoluteFilePath()).remove();
+    }
+
+    QString idxfilepath = cachePath + "idx_" + fileName + ".txt";
+    if(QDir(idxfilepath).exists())
+        QFile(idxfilepath).remove();
+}
+
 
 // 大小字符串
 QString formatSize(qulonglong size, bool persec){
@@ -896,15 +965,22 @@ void DownLoadUI::slotDownloadInited(const Download* download){
 
 //DownLoader - slots, 主要是ui上状态更新
 void DownLoadUI::slotUpdateUrlsTable(const Download *download){
+    return;
     _logger->debug("updateUrlsTable1");
+
     if(download == NULL)
         return;
 
-    if((mLastProgress == download->status()->progress()&& download->status()->progress() != 100)
-            && mLastSpeed == download->status()->downloadRate())
+    qint64 speed = download->status()->downloadRate();
+    qint64 progress = download->status()->progress();
+    _logger->info(QString("speed=%1,lastspeed=%2,progress=%3,lastprog=%4").arg(speed).arg(download->status()->getLastSpeed()).arg(progress).arg(download->status()->getLastProgress()));
+
+    if((download->status()->getLastProgress() == progress && progress != 100)
+            && download->status()->getLastSpeed() == speed)
         return;
 
-     mLastProgress = download->status()->progress();
+    download->status()->setLastProgress(progress);
+    download->status()->setLastSpeed(speed);
 
     _logger->debug("updateUrlsTable2");
 

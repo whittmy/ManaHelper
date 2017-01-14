@@ -10,6 +10,7 @@
 #include "download/downloadui.h"
 
 
+
 static QString strPidFile;
 
 void writePidFile()
@@ -26,6 +27,9 @@ void writePidFile()
 
 #include "webbrowser/browserapplication.h"
 #include <qtwebenginewidgetsglobal.h>
+
+//#pragma comment(lib,"Qt5Widgets.lib")
+//#pragma comment(lib,"Qt5WebKitWidgets.lib")
 
 int main(int argc, char *argv[])
 {
@@ -48,15 +52,13 @@ int main(int argc, char *argv[])
     //if (!strPidFile.isEmpty())
     //        writePidFile();
 
-
-
-
     Q_INIT_RESOURCE(data);
     BrowserApplication application(argc, argv);
     if (!application.isTheOnlyBrowser())
         return 0;
 
     application.newMainWindow();
+
     return application.exec();
 
 //    DownLoadUI w;

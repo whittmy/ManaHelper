@@ -1,15 +1,17 @@
 ﻿#include "upgradetipdialog.h"
 #include "ui_upgradetipdialog.h"
-
-#pragma comment(lib,"Qt5Widgets.lib")
-#pragma comment(lib,"Qt5WebKitWidgets.lib")
+#include <QCloseEvent>
+#include <QMessageBox>
 
 
 UpgradeTipDialog::UpgradeTipDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::UpgradeTipDialog),_logger(new LogMe(this))
 {
-    ui->setupUi(this);
+     ui->setupUi(this);
+
+     //设置窗口关闭后自动释放
+     //setAttribute(Qt::WA_DeleteOnClose, true);
 
     // 禁止改变窗口大小。
     setFixedSize(this->geometry().size());
@@ -45,6 +47,26 @@ void UpgradeTipDialog::setData(REQ_TYPE type, Xml_Parser_Upgrade *dp){
 
 
     ui->_webView->setContextMenuPolicy(Qt::NoContextMenu); //禁止右键
+
+    //自升级的取消按钮，更名为退出程序
+    if(type == UPGRADE_SELF){
+        //去掉对话框的关闭和取消按钮
+        ui->_btnCancel->setText("Exit Application");
+    }
+}
+
+//关闭之前确认是否退出应用程序
+void UpgradeTipDialog::closeEvent(QCloseEvent * e){
+    if(mType == UPGRADE_SELF){
+        QMessageBox::StandardButton btn = QMessageBox::information(NULL, "Cancel Upgrade", "Cancel Upgrade means Exit Application", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+        if(btn == QMessageBox::Yes){
+            e->accept();
+            QApplication::exit(0);
+        }
+        else{
+            e->ignore();
+        }
+    }
 }
 
 
@@ -62,6 +84,8 @@ void UpgradeTipDialog::on__btnUpgrade_clicked(){
     connect(mReply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(dl_progress(qint64,qint64)));
     connect(mReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(dl_error(QNetworkReply::NetworkError)));
     connect(mReply, SIGNAL(readyRead()), this, SLOT(dl_readReady(QNetworkReply*)));
+
+    ui->_btnUpgrade->setDisabled(true);
 }
 
 void UpgradeTipDialog::dl_readReady(QNetworkReply* reply){
@@ -79,9 +103,7 @@ void UpgradeTipDialog::dl_finished(){
         //拷贝到设备根目录下
 
         //载入操作提示
-        ui->_webView->load(QUrl("qrc:///other/html/devupgrade.html"));
-
-
+        ui->_webView->load(QUrl("qrc:/other/html/devupgrade.html"));
     }
 }
 

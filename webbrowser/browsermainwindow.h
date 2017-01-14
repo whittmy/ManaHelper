@@ -51,6 +51,7 @@
 #include "download/devmanagerdialog.h"
 
 #include "util/httprequestor.h"
+#include "download/downloadui.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -222,6 +223,11 @@ private:
     friend class BrowserApplication;
 
     LogMe *_logger;
+
+
+    DownLoadUI* s_downLoadui;
+
+
 };
 
 #endif // BROWSERMAINWINDOW_H

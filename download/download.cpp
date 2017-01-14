@@ -66,6 +66,8 @@ bool Download::newDownload(int row, const int ID, const QUrl &url, const QUuid &
         fileNewName = fileInfo.fileName();
     }
 
+    fileNewName = Paths::filter(fileNewName);
+
    // fileNewName += ".mp4";      //!!不考虑传入的文件名带扩展名??? 其它类型的资源呢？？？
 
     this->setName(fileNewName);
@@ -269,20 +271,24 @@ void Download::slot_onHttpReqFinished(REQ_TYPE type, QString rslt){
     emit sig_onTaskAdded(this);
 }
 
-void Download::closeFile(){
+const void Download::closeFile(){
     _logger->info("closeFile");
     if(_file != NULL){
         _file->flush();
         _file->close();
     }
+    _logger->info("end closeFile");
 }
 
 void Download::setFile(QFile *file)
 {
+    _logger->info("setFile");
     if(_file != NULL){
         delete _file;
+        _file = 0;
     }
     _file = file;
+    _logger->info("end setFile");
 }
 
 //QFile *Download::file()
@@ -305,6 +311,7 @@ void Download::setName(const QString &name)
     _name = name;
 }
 
+//任务的总文件名
 QString Download::name() const
 {
     return _name;
@@ -379,7 +386,7 @@ void Download::setID(const int id){
 }
 
 
-QUrl Download::getCurSegUrl(){
+QUrl Download::getCurSegUrl() const{
     if(mCurSegIdx < getSegCnt())
         return mSegUrls.at(mCurSegIdx);
     return QUrl();
@@ -389,15 +396,15 @@ void Download::setCurSegUrl(QUrl url){
         mSegUrls.replace(mCurSegIdx, url);
 }
 
-int Download::getCurSegIdx(){
+int Download::getCurSegIdx() const{
     return mCurSegIdx;
 }
 
-int Download::getSegCnt(){
+int Download::getSegCnt() const{
     return mSegUrls.size();
 }
 
-bool Download::bSegEnd(){
+bool Download::bSegEnd() const{
     return mCurSegIdx >= getSegCnt();
 }
 
@@ -438,15 +445,15 @@ void Download::doNextSeg(){
 }
 
 
-void Download::slot_httpError(QNetworkReply::NetworkError err, QString str){
+void Download::slot_httpError(const QNetworkReply::NetworkError err, const QString str){
     _error = err;
     _lastError = str;
 }
 
-QNetworkReply::NetworkError Download::errorCode(){
+QNetworkReply::NetworkError Download::errorCode() const{
     return _error;
 }
 
-QString Download::errorStr(){
+QString Download::errorStr() const{
     return _lastError;
 }

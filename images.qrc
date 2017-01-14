@@ -16,6 +16,7 @@
         <file>images/import.png</file>
         <file>images/text.png</file>
         <file>images/batch.png</file>
+        <file>images/media-playback-pause.png</file>
     </qresource>
     <qresource prefix="/categories">
         <file>images/document.png</file>

@@ -98,6 +98,11 @@ public:
 
     void nextSeg(); //段切换时要充值部分数据
 
+
+    qint64 getLastSpeed();
+    qint64 getLastProgress();
+    void setLastSpeed(qint64 s);
+    void setLastProgress(qint64 p);
 public slots:
     void startTime();
     void updateFileStatus(qint64 bytesReceived, qint64 bytesSegTotal);
@@ -129,6 +134,8 @@ private:
     DownloadStatus _dlStatus;
 
     int _segidx, _segsum;
+
+    qint64 mLastProgress,mLastSpeed;
 
 };
 

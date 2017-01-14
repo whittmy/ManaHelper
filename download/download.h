@@ -44,10 +44,10 @@ public:
 
     void setFile(QFile *file);
     //QFile *file();
-    bool bfileValid(){
+    bool bfileValid() const{
         return _file!=0;
     }
-    QString fileName(){  //注意fileName与 name的区别，一个是文件本身名，一个是任务名
+    QString fileName() const{  //注意fileName与 name的区别，一个是文件本身名，一个是任务名
         if(_file != NULL)
             return _file->fileName();
         return QString();
@@ -56,16 +56,16 @@ public:
     void writeFile(QByteArray arr){
         _file->write(arr);
     }
-    qint64 getFileSize(){
+    qint64 getFileSize() const{
         return _file->size();
     }
-    bool removeFile(){
+    bool removeFile() const{
         if(_file == NULL)
             return true;
         return _file->remove();
     }
 
-    QString errString(){
+    QString errString() const{
         if(_file == NULL)
             return QString();
         return _file->errorString();
@@ -99,25 +99,25 @@ public:
 
 
 public:
-    QUrl getCurSegUrl();
+    QUrl getCurSegUrl() const;
     void setCurSegUrl(QUrl url);
-    int getCurSegIdx();
-    int getSegCnt();
+    int getCurSegIdx() const;
+    int getSegCnt() const;
     void doNextSeg(); //含当前段的证明，段号的递增等工作
-    bool bSegEnd();
-    void closeFile();
+    bool bSegEnd() const;
+    const void closeFile();
 
-    QNetworkReply::NetworkError errorCode();
-    QString errorStr();
+    QNetworkReply::NetworkError errorCode() const;
+    QString errorStr() const;
 
     qint64 _row;
 
 
 signals:
-    void sig_onTaskAdded(Download* download);
+    void sig_onTaskAdded(const Download* download);
 public slots:
     void slot_onHttpReqFinished(REQ_TYPE type, QString result);
-    void slot_httpError(QNetworkReply::NetworkError err, QString str);
+    void slot_httpError(const QNetworkReply::NetworkError err, const QString str);
 
 private:
 

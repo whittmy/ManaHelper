@@ -72,15 +72,12 @@
 #include <QWebEngineScriptCollection>
 
 #include <QtCore/QDebug>
+#include "util/paths.h"
 
 DownloadMgr *BrowserApplication::s_downloadManager = 0;
 HistoryManager *BrowserApplication::s_historyManager = 0;
 QNetworkAccessManager *BrowserApplication::s_networkAccessManager = 0;
 BookmarksManager *BrowserApplication::s_bookmarksManager = 0;
-
-//luokui>>
-DownLoadUI *BrowserApplication::s_downLoadui = 0;
-//<<
 
 static void setUserStyleSheet(QWebEngineProfile *profile, const QString &styleSheet, BrowserMainWindow *mainWindow = 0)
 {
@@ -183,6 +180,9 @@ BrowserApplication::BrowserApplication(int &argc, char **argv)
 #endif
 
     QTimer::singleShot(0, this, SLOT(postLaunch()));
+
+    //初始化些数据
+    Paths::init();
 }
 
 BrowserApplication::~BrowserApplication()
@@ -194,10 +194,6 @@ BrowserApplication::~BrowserApplication()
     }
     delete s_networkAccessManager;
     delete s_bookmarksManager;
-
-    //luokui>>
-    delete s_downLoadui;
-    //<<
 }
 
 #if defined(Q_OS_OSX)
@@ -494,16 +490,7 @@ DownloadMgr *BrowserApplication::downloadManager()
     return s_downloadManager;
 }
 
-//luokui >>
-DownLoadUI *BrowserApplication::downLoadUI(){
-    if(!s_downLoadui){
-        s_downLoadui = new DownLoadUI();
-        s_downLoadui->resize(800, 600);
-        s_downLoadui->move(200,100);
-    }
-    return s_downLoadui;
-}
-//<<<
+
 
 QNetworkAccessManager *BrowserApplication::networkAccessManager()
 {

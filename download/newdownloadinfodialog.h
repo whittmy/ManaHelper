@@ -23,7 +23,7 @@ public:
     modelDownloads *_model;
     void setDownLoader(DownLoader *dl);
 private slots:
-    void on_browseSaveToButton_clicked();
+    //void on_browseSaveToButton_clicked();
     void on_pushButton_4_clicked();
     void on_pushButton_2_clicked();
     void on_categoryBox_currentIndexChanged(int index);
@@ -33,7 +33,7 @@ private slots:
 
 private:
     Ui::NewDownloadInfoDialog *ui;
-
+    QString _url, _title, _path;
     DownLoader *mDownLoader;
 };
 

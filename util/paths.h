@@ -35,7 +35,7 @@ public:
     static QString cacheDirPath();
     static void writeTxtFile(QString file, QString txt);
     static QString devicePath(QString txt);
-
+    static QString  filter(QString strTest);
 
 private:
     static QHash<QString, QString> mDevPathHash;

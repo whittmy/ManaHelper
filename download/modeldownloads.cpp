@@ -15,6 +15,9 @@ _logger(new LogMe(this))
     //设置表名
     setTable("downloadsTable");
 
+    //设置按ID逆序排列，即最后添加的位于最顶部，解决添加新任务后，老是针对第一条记录进行下载的问题(插入记录时以行号0为依据进行读写数据)。
+    setSort(DownloadConstants::Attributes::ID, Qt::DescendingOrder);
+
     //设置编辑值的策略
     //0:所有变化立即更新数据库
     //1:行的数据变化，只有选择不同行时才更新数据库
@@ -27,6 +30,13 @@ _logger(new LogMe(this))
 
     //设置各列的标题名
     setHeaders();
+}
+
+void modelDownloads::refrushModel()
+{
+    beginResetModel();
+    endResetModel();
+
 }
 
 //int modelDownloads::rowCount(const QModelIndex &parent) const
@@ -43,7 +53,7 @@ _logger(new LogMe(this))
 //data为重载函数，获取的数据即为view端显示的数据，显示可以与实际不同，在这儿处理下
 //data写的如果有问题，
 QVariant modelDownloads::data(const QModelIndex &index, int role) const  {
-
+    //qDebug() << "role:"<<role;
     //return QSqlTableModel::data(index, role);
 
     ////itemData以及会触发该data函数，
@@ -62,6 +72,39 @@ QVariant modelDownloads::data(const QModelIndex &index, int role) const  {
     int col = index.column();
 
     /*
+    if(role == Qt::TextAlignmentRole){
+//        if (col == DownloadConstants::Attributes::AddedDate ||
+//               col == DownloadConstants::Attributes::Size ||
+//               col == DownloadConstants::Attributes::Progress ||
+//                col == DownloadConstants::Attributes::Speed ||
+//                col == DownloadConstants::Attributes::Status)
+//        {
+
+//            // + Qt::AlignVCenter;
+//        }
+        qDebug() << "TextAlignmentRole";
+       return Qt::AlignCenter;
+    }
+
+
+    else if(role == Qt::TextAlignmentRole){
+        //_logger->debug("data-TextAlignmentRole");
+        if (row == 1 && col == 1) //change text alignment only for cell(1,1)
+        {
+            return Qt::AlignRight + Qt::AlignVCenter;
+        }
+    }
+    else if(role == Qt::CheckStateRole){
+        //_logger->debug("data-CheckStateRole");
+        if (row == 1 && col == 0) //add a checkbox to cell(1,0)
+        {
+            return Qt::Checked;
+        }
+    }
+    else
+
+    */
+    //_logger->debug("role="+QString::number(role));
     if(role == Qt::FontRole){
         //_logger->debug("data-FontRole");
         if (row == 0 && col == 0) //change font only for cell(0,0)
@@ -79,23 +122,7 @@ QVariant modelDownloads::data(const QModelIndex &index, int role) const  {
             return redBackground;
         }
     }
-    else if(role == Qt::TextAlignmentRole){
-        //_logger->debug("data-TextAlignmentRole");
-        if (row == 1 && col == 1) //change text alignment only for cell(1,1)
-        {
-            return Qt::AlignRight + Qt::AlignVCenter;
-        }
-    }
-    else if(role == Qt::CheckStateRole){
-        //_logger->debug("data-CheckStateRole");
-        if (row == 1 && col == 0) //add a checkbox to cell(1,0)
-        {
-            return Qt::Checked;
-        }
-    }
-    else
-
-    */if(role == Qt::DisplayRole){
+    else if(role == Qt::DisplayRole){
         //_logger->debug(QString("data-DisplayRole,row=%1,col=%2").arg(row).arg(col));
 
         QString unit;
@@ -208,38 +235,25 @@ void modelDownloads::setFilterQueue(int value){
     setFilterCustom("queue",value);
 }
 //筛选下载的记录，根据 完成状态-类别-queue， “-1”代表忽略
-void modelDownloads::setFilterDownloads(int status=-1,int type = -1, int queue=-1 ){
-    _logger->debug(QString("setFilterDownloads:%1,%2,%3").arg(status).arg(type).arg(queue));
-    QString filters1="",filters2="",filters3="";
-    if(status!=-1)
-        filters1.append("finished="+QString::number(status));
-    if(type!=-1)
-        filters2.append("type="+QString::number(type));
-    if(queue!=-1)
-        filters3.append("queue="+QString::number(queue));
+void modelDownloads::setFilterDownloads(int status=-1){
+    //_logger->debug(QString("setFilterDownloads:%1").arg(status));
+    QString filters1="",filters2="";
+    if(status == -1)
+        filters1.append("status < "+QString::number(Status::DownloadStatus::Finished));
+    else
+        filters1.append("status = "+QString::number(Status::DownloadStatus::Finished));
+
     QString filters="";
     if(filters1!=""){
         filters.append(filters1);
-    }
-    if(filters2!=""){
-        if(filters!=""){
-            filters.append(" AND ").append(filters2);
-        }else{
-            filters.append(filters2);
-        }
-    }
-    if(filters3!=""){
-        if(filters!=""){
-            filters.append(" AND ").append(filters3);
-        }else{
-            filters.append(filters3);
-        }
+        //qDebug() << filters1;
     }
 
     //三个filter字符串 and 操作
     setFilter(filters);
     select();
 }
+
 
 //设置各列的标题
 void modelDownloads::setHeaders(){
@@ -265,6 +279,8 @@ void modelDownloads::setHeaders(){
     setHeaderData(DownloadConstants::Attributes::Pieces, Qt::Horizontal, QObject::tr("Pieces"));
     setHeaderData(DownloadConstants::Attributes::Uuid, Qt::Horizontal, QObject::tr("uuid"));
     //removeColumn(12);
+
+
 }
 
 //插入下载记录, 并返回该插入记录的行号,若失败返回-1
@@ -543,7 +559,7 @@ qint64 modelDownloads::getPieces(int row){
 }
 
 void modelDownloads::setPieces(int row,qint64 pieces, bool submit){
-    _logger->debug(QString("setPieces").arg(row).arg(pieces));
+    _logger->debug(QString("setPieces,%1,%2").arg(row).arg(pieces));
     setData(index(row,DownloadConstants::Attributes::Pieces),pieces);
     if(submit) submitAll();
 }

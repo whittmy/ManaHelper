@@ -33,8 +33,24 @@ Status::Status(QObject *parent) :
     _dlMode = NewDownload;
     setDownloadStatus(Idle);
     _segidx = _segsum = 0; //-1???
-
+    mLastProgress = mLastSpeed = 0;
     startTime();
+}
+
+qint64 Status::getLastSpeed(){
+    return mLastSpeed;
+}
+
+qint64 Status::getLastProgress(){
+    return mLastProgress;
+}
+
+void Status::setLastSpeed(qint64 s){
+    mLastSpeed = s;
+}
+
+void Status::setLastProgress(qint64 p){
+    mLastProgress = p;
 }
 
 //由于文件总大小不准确，这儿计算有问题
@@ -149,8 +165,8 @@ void Status::updateFileStatus(qint64 recv, qint64 total)
 
     float prg  = 0;
     if(bytesSegTotal() != 0)
-        prg = (segRecv*100.0) / bytesSegTotal();
-    setProgress((prg +segIdx()*100)/segSum() );
+        prg = (segRecv*1.0) / bytesSegTotal();
+    setProgress(((prg +segIdx())/segSum())*100 );
 
     qDebug() << QString("updateFileStatus:"
                         "recv=%1,total=%2,"

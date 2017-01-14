@@ -13,7 +13,7 @@ public:
     explicit modelDownloads(QObject *parent = 0, DownloadsDBManager *dm=0);
     void setFilterCustom(QString key, int value);
     void setFilterCustom(QString key, QString value);
-    void setFilterDownloads(int status,int type, int queue );
+    void setFilterDownloads(int status);
 
     void setHeaders();
     int insertDownload(QString filename,QString url,QString loc,QString desc,int type,QString ref,int queue,int pieces,QString uuid);
@@ -23,6 +23,7 @@ public:
     void setFilterFinishedStatus(int value);
     void setFilterType(int value);
     void setFilterQueue(int value);
+    void refrushModel();
 
     //modelDownloads(QObject *parent = 0,QSqlDatabase *db);
     //int rowCount(const QModelIndex &parent = QModelIndex()) const ;

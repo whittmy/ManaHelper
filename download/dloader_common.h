@@ -26,6 +26,10 @@ public:
     static DLoader_common* Instance();
     static void free();
 
+    enum{
+        ACTION_PAUSE,ACTION_DEL, ACTION_FINISH, ACTION_UPDATE,ACTION_RESUME
+    };
+
 
 private:
  explicit DLoader_common(QObject *parent = 0);
@@ -44,10 +48,11 @@ signals:
 
 public:
     //addDownload兼start操作
-    void doStart(Download *dl);
+    void doStart(const Download *dl);
     void doPause(const QUuid &uuid);
     void doRemove(const QUuid &uuid);
     void freeReplyInfo(QNetworkReply* reply);
+    void doSaveData(int type, const Download*dl);
 private slots:
     void slot_replyMetaDataChanged(QObject *currentReply);
     void slot_httpReadyRead(QObject *currentReply);
@@ -55,7 +60,7 @@ private slots:
 //    void slot_progress(qint64 recv, qint64 total);
 
 private:
-    void removeFile(Download *download);
+    void removeFile(const Download *download);
 
 public:
     int getTaskingCnt(){return _downloadHash->size();} //获取正在下载的任务数

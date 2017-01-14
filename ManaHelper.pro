@@ -10,9 +10,11 @@ QT	 +=network
 QT       += xml
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+#multiple process compile, may make compile quickly
+QMAKE_CXXFLAGS += /MP
 
 # browser >>
-QT       += webenginewidgets  printsupport
+QT       += webkitwidgets webenginewidgets  printsupport
 qtHaveModule(uitools):!embedded: QT += uitools
 else: DEFINES += QT_NO_UITOOLS
 #<<
@@ -24,7 +26,15 @@ TARGET = ManaHelper
 TEMPLATE = app
 LIBS += -luser32      ##解决RegisterDeviceNotification 链接出错问题
 
-
+#CONFIG(debug,debug|release) {
+# unix|win32: LIBS += -lQtCored4
+# unix|win32: LIBS += -lQtGuid4
+# unix|win32: LIBS += -lQtNetworkd4
+#} else {
+# unix|win32: LIBS += -lQtCore4
+# unix|win32: LIBS += -lQtGui4
+# unix|win32: LIBS += -lQtNetwork4
+#}
 
 
 SOURCES += \
@@ -49,7 +59,6 @@ SOURCES += \
     webbrowser/xbel.cpp \
     download/modeldownloads.cpp \
     download/downloadsdbmanager.cpp \
-    download/optionsdialog.cpp \
     download/newdownloadinfodialog.cpp \
     download/downloadpropertydialog.cpp \
     download/downloadingprogressdialog.cpp \
@@ -101,7 +110,6 @@ HEADERS  += \
     webbrowser/xbel.h   \
     download/modeldownloads.h \
     download/downloadsdbmanager.h \
-    download/optionsdialog.h \
     download/newdownloadinfodialog.h \
     download/downloadpropertydialog.h \
     download/downloadingprogressdialog.h \
@@ -142,7 +150,6 @@ FORMS    += \
     webbrowser/passworddialog.ui \
     webbrowser/proxy.ui \
     webbrowser/settings.ui  \
-    download/optionsdialog.ui \
     download/newdownloadinfodialog.ui \
     download/downloadpropertydialog.ui \
     download/downloadingprogressdialog.ui \

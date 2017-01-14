@@ -47,17 +47,17 @@ void DownLoader::start(const int row, const int ID, const QString &url, const QU
 
     //Download 资源释放？？？
     Download *newDownload = new Download(this);
-    connect(newDownload, SIGNAL(sig_onTaskAdded(Download*)), this, SLOT(slot_onTaskAdded(Download*)));
+    connect(newDownload, SIGNAL(sig_onTaskAdded(const Download*)), this, SLOT(slot_onTaskAdded(const Download*)));
 
     //信号转发
     connect(mDloader, SIGNAL(sg_dlInitialed(const Download*)),
-                    this, SIGNAL(downloadInitialed(const Download *)));
+                    this, SIGNAL(downloadInitialed(const Download*)));
     connect(mDloader, SIGNAL(sg_dlPaused(const Download*)),
-                    this, SIGNAL(downloadPaused(const Download *)));
+                    this, SIGNAL(downloadPaused(const Download*)));
     connect(mDloader, SIGNAL(sg_dlResumed(const Download*)),
-                    this, SIGNAL(downlaodResumed(const Download *)));
+                    this, SIGNAL(downlaodResumed(const Download*)));
     connect(mDloader, SIGNAL(sg_dlUpdated(const Download*)),
-                    this, SIGNAL(downloadUpdated(const Download *)));
+                    this, SIGNAL(downloadUpdated(const Download*)));
     connect(mDloader, SIGNAL(sg_dlRemoved(const Download*)),
                     this, SIGNAL(downloadRemoved(const Download*)));
     connect(mDloader, SIGNAL(sg_dlFinished(const Download*)),
@@ -69,7 +69,7 @@ void DownLoader::start(const int row, const int ID, const QString &url, const QU
    //mDloader->doStart(newDownload);
 }
 
-void DownLoader::slot_onTaskAdded(Download *download){
+void DownLoader::slot_onTaskAdded(const Download *download){
     _logger->info("slot_onTaskAdded");
 
     if(download->status()->downloadStatus() == Status::Failed

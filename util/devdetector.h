@@ -18,6 +18,9 @@ public:
     ~DevDetector();
     void checkDev();
     static QString getDevPath();
+    static QString getDevVer();
+
+
     bool nativeEvent(const QByteArray & eventType, void * message, long*result);
 
 signals:
@@ -31,7 +34,7 @@ private:
     bool adaptRules(QString drive);
 
 private:
-    static QString _devPath;
+    static QString _devPath, _devVer;
     HANDLE _wnd;
     LogMe *_logger;
 

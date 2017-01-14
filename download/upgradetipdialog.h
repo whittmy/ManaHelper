@@ -32,7 +32,8 @@ private slots:
     void dl_error(QNetworkReply::NetworkError err);
     void dl_readReady(QNetworkReply* reply);
 
-
+protected:
+    void closeEvent(QCloseEvent * event);
 private:
     QNetworkAccessManager *mNetMgr;
     QNetworkReply* mReply;

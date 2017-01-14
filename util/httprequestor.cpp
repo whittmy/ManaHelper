@@ -5,8 +5,8 @@
 //请求url列表。
 QString gUrlArr[] = {
     "", //nothing
-    "http://www.nybgjd.com/update/api2/handler?apk_vercode=&board=&android=&time=&upmode=&mac=00&brand=LEMOON&firmware=00.01.01&device=PiaPia", //UPGRADE_SELF
-    "http://www.sohu.com"   //UPGRADE_DEVICE
+    "http://www.nybgjd.com/update/api2/handler?apk_vercode=&board=&android=&time=&upmode=&mac=00&brand=LEMOON&firmware=%1&device=X8Helper", //UPGRADE_SELF
+    "http://www.nybgjd.com/update/api2/handler?apk_vercode=&board=&android=&time=&upmode=&mac=00&brand=LEMOON&firmware=%1&device=X8"   //UPGRADE_DEVICE
 };
 
 

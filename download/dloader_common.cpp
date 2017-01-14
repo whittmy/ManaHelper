@@ -1,6 +1,6 @@
 ﻿#include "dloader_common.h"
 #include "util/paths.h"
-
+#include "downloadsdbmanager.h"
 //静态成员变量初始化
 DLoader_common* DLoader_common::mInstance = NULL;
 
@@ -79,20 +79,21 @@ void DLoader_common::free(){
 
 //新任务或者恢复下载，实际上相当于重新初始化任务的下载信息及状态
 //那在暂停等操作时，得清除指定任务的网络状态吧(如 reply的释放，hash信息的删除等)！！！
-void DLoader_common::doStart(Download* dl)
+void DLoader_common::doStart(const Download* dl)
 {
     _logger->info(QString("doStart for main-url: %1 ").arg(dl->url().toString()));
 
     _bUserInterupt = false;
 
     //刷新界面
-    emit sg_dlUpdated(dl);
+    //emit sg_dlUpdated(dl);
+    doSaveData(ACTION_UPDATE, dl);
 
     //若所有段已下载完成,则任务完成
     if(dl->bSegEnd()){
         _logger->info("end of seg, task-complated!!");
         dl->status()->setDownloadStatus(Status::WaitCombine);
-        slot_httpFinished(dl);
+        slot_httpFinished((QObject *)dl);
         return;
     }
 
@@ -107,7 +108,7 @@ void DLoader_common::doStart(Download* dl)
     //取当前段url进行下载
     //QNetworkRequest request(dl->url().toString());
 
-    dl->slot_httpError(QNetworkReply::NoError, "");//reset error flag
+    ((Download*)dl)->slot_httpError(QNetworkReply::NoError, "");//reset error flag
 
     QNetworkRequest request(dl->getCurSegUrl().toString());
     _logger->info(QString("get-cur-seg_alreadybyte:%1").arg(dl->getFileSize()));
@@ -121,14 +122,15 @@ void DLoader_common::doStart(Download* dl)
 
     //将每一个reply-download, reply'url- download'status 关联。
     //目的是根据reply找到download的相关状态，这些reply的url对应download中的分段url(或其重定向)
-    QHash<QNetworkReply*, Download*>::iterator i = _downloadHash->insert(reply, dl);
+    QHash<QNetworkReply*, Download*>::iterator i = _downloadHash->insert(reply, (Download*)dl);
     QHash<QUrl, Status*>::iterator statusIt = _statusHash->insert(i.key()->url(), dl->status());
 
     if (statusIt.value()->downloadMode() == Status::NewDownload) {
         emit sg_dlInitialed(i.value());
         _logger->info("emit sg_dlInitialed");
     } else if (statusIt.value()->downloadMode() == Status::ResumeDownload) {
-        emit sg_dlResumed(i.value());
+        //emit sg_dlResumed(i.value());
+        doSaveData(ACTION_RESUME, i.value());
         _logger->info("emit sg_dlResumed");
     }
 
@@ -154,6 +156,35 @@ void DLoader_common::doStart(Download* dl)
     _logger->info("end doStart!!");
 }
 
+
+void DLoader_common::doSaveData(int type, const Download*dl){
+    //_logger->info("doSaveData-" + dl->fileName());
+    DownloadsDBManager* _mgr = DownloadsDBManager::Instance();
+    _mgr->setStatus(dl->ID(), dl->status()->downloadStatus());
+    _mgr->setTransferRate(dl->ID(), dl->status()->downloadRate());
+    _mgr->setSize(dl->ID(), dl->status()->bytesTotal());
+    _mgr->setProgress(dl->ID(), dl->status()->progress());
+    if(type == ACTION_DEL){
+        _logger->info("emit sg_dlRemoved");
+        emit sg_dlRemoved(dl);
+    }
+    else if(type == ACTION_FINISH){
+        _logger->info("emit sg_dlFinished");
+        emit sg_dlFinished(dl);
+    }
+    else if(type == ACTION_PAUSE){
+        _logger->info("emit sg_dlPaused");
+        emit sg_dlPaused(dl);
+    }
+    else if(type == ACTION_RESUME){
+        _logger->info("emit sg_dlResumed");
+        emit sg_dlResumed(dl);
+    }
+    else if(type == ACTION_UPDATE){
+
+    }
+}
+
 // TODO: emit signal when download hash is empty OR no download has been found
 void DLoader_common::doPause(const QUuid &uuid)
 {
@@ -173,20 +204,20 @@ void DLoader_common::doPause(const QUuid &uuid)
             Status *status = _statusHash->find(i.key()->url()).value();
             status->setDownloadStatus(Status::Paused);
 
-            _logger->info(QString("Emit 'sg_dlPaused' for [%1]").arg(uuid.toString()));
-            emit sg_dlPaused(i.value());
-
             _bUserInterupt = true;
             i.key()->abort();
             //i.key()->close();   //用了close就崩溃，我崩溃..
 
+            //doSaveData(ACTION_PAUSE, i.value());
+
             //释放
-            freeReplyInfo(i.key());
+            //freeReplyInfo(i.key());
 
 
             _logger->debug("pauseDownload network-abort...");
             return;
         }
+        i++;
     }
 
     _logger->info("had no pauseDownload");
@@ -237,6 +268,8 @@ void DLoader_common::doRemove(const QUuid &uuid)
      //emit this->sg_downloadDoesNotExistToRemove(uuid);
 }
 
+
+
 //对应QNetworkReply中的某状态,
 //设置网络文件总大小, >>>每次启动须先读数据库中的大小<<<
 void DLoader_common::slot_replyMetaDataChanged(QObject *currentReply)
@@ -279,7 +312,8 @@ void DLoader_common::slot_httpReadyRead(QObject *currentReply)
         Status *status = download->status();
         download->writeFile(reply->readAll());
         status->setDownloadStatus(Status::Downloading);
-        emit sg_dlUpdated(download);
+
+        doSaveData(ACTION_UPDATE, download);
     }
 }
 
@@ -292,7 +326,8 @@ void DLoader_common::slot_httpFinished(QObject *currentReply)
         //已完成
         Download *dl = qobject_cast<Download*>(currentReply);
         _logger->info("task-completed for url:"+dl->url().toString());
-        emit sg_dlFinished(dl);
+        //emit sg_dlFinished(dl);
+        doSaveData(ACTION_FINISH, dl);
         return;
     }
 
@@ -308,8 +343,9 @@ void DLoader_common::slot_httpFinished(QObject *currentReply)
     Download *download = i.value();
     QNetworkReply *reply = i.key();
 
-    //先 释放、关闭 reply!!!!
+    //>>>>>> 先 释放、关闭 reply!!!! >>>>>>>>>>>
     freeReplyInfo(reply);
+    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     QVariant possibleRedirectUrl = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
     download->setUrlRedirectedTo(possibleRedirectUrl.toUrl());
@@ -334,10 +370,7 @@ void DLoader_common::slot_httpFinished(QObject *currentReply)
     //若非用户中断的自然完成，则认为当前段已完成。
     if(!_bUserInterupt && download->errorCode()==QNetworkReply::NoError){
         _logger->info(QString("seg-%1 had completed!").arg(download->getCurSegIdx()));
-
         download->doNextSeg();
-        //i.key()->deleteLater();
-        //freeReplyInfo(reply);    //完全释放
 
         //继续开始新段下载
         doStart(download);
@@ -349,27 +382,13 @@ void DLoader_common::slot_httpFinished(QObject *currentReply)
     download->closeFile();
     download->setFile(0);
 
-    emit sg_dlUpdated(download);
+    doSaveData(ACTION_PAUSE, download);
     //freeReplyInfo(i.key());
 
-
-    //判断文件大小以确定是否下载完成
-//    if(/*status->downloadStatus() != Status::Paused*/download->bFinished()) {
-//        _logger->info("HTTP request has finished, I'm done with downloading.");
-//        status->setDownloadStatus(Status::WaitTrans);
-//        emit sg_dlFinished(download);
-//    }
-
-    //?????? 未名原因停止！！，暂不处理，
-    //_logger->error("http finished unknown!!!");
-    // Oh let's emit this mother fucker!
-    //emit sg_dlUpdated(download);
-
-    //_downloadHash->remove(reply);
 }
 
 //删除任务中的文件
-void DLoader_common::removeFile(Download *download)
+void DLoader_common::removeFile(const Download *download)
 {
     _logger->info(QString("removeFile: [%1]").arg(download->fileName()));
 
@@ -377,8 +396,8 @@ void DLoader_common::removeFile(Download *download)
         _logger->error(QString("Couldn't remove [%1]. Error: %2").arg(download->fileName(), download->errString()));
         return;
     }
-    download->setFile(0);
-    emit sg_dlRemoved(download);
+    ((Download*)download)->setFile(0);
+    doSaveData(ACTION_DEL, download);
 }
 
 QUrl DLoader_common::redirectUrl(const QUrl &possibleRedirectUrl, const QUrl &oldRedirectUrl) const

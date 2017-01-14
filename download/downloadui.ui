@@ -133,7 +133,7 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="actionStop_Download"/>
+    <addaction name="actionPause_Download"/>
     <addaction name="actionRemove"/>
     <addaction name="actionDownload_Now"/>
     <addaction name="actionRedownload"/>
@@ -184,7 +184,7 @@
    </attribute>
    <addaction name="actionAdd_New"/>
    <addaction name="actionDownload_Now"/>
-   <addaction name="actionStop_Download"/>
+   <addaction name="actionPause_Download"/>
    <addaction name="actionRemove"/>
    <addaction name="actionProperties"/>
    <addaction name="separator"/>
@@ -305,111 +305,12 @@
        </column>
        <item>
         <property name="text">
-         <string>All Downloads</string>
-        </property>
-        <property name="icon">
-         <iconset resource="../images.qrc">
-          <normaloff>:/categories/images/folder.png</normaloff>:/categories/images/folder.png</iconset>
-        </property>
-        <item>
-         <property name="text">
-          <string>Compressed</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/archive.png</normaloff>:/categories/images/archive.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Documents</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/document.png</normaloff>:/categories/images/document.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Music</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/audio.png</normaloff>:/categories/images/audio.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Programs</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/downloadmanagment.png</normaloff>:/categories/images/downloadmanagment.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Video</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/video.png</normaloff>:/categories/images/video.png</iconset>
-         </property>
-        </item>
-       </item>
-       <item>
-        <property name="text">
          <string>Unfinished</string>
         </property>
         <property name="icon">
          <iconset resource="../images.qrc">
           <normaloff>:/categories/images/folder_open.png</normaloff>:/categories/images/folder_open.png</iconset>
         </property>
-        <item>
-         <property name="text">
-          <string>Compressed</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/archive.png</normaloff>:/categories/images/archive.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Documents</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/document.png</normaloff>:/categories/images/document.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Music</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/audio.png</normaloff>:/categories/images/audio.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Programs</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/downloadmanagment.png</normaloff>:/categories/images/downloadmanagment.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Video</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/video.png</normaloff>:/categories/images/video.png</iconset>
-         </property>
-        </item>
        </item>
        <item>
         <property name="text">
@@ -419,96 +320,6 @@
          <iconset resource="../images.qrc">
           <normaloff>:/categories/images/ok.png</normaloff>:/categories/images/ok.png</iconset>
         </property>
-        <item>
-         <property name="text">
-          <string>Compressed</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/archive.png</normaloff>:/categories/images/archive.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Documents</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/document.png</normaloff>:/categories/images/document.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Music</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/audio.png</normaloff>:/categories/images/audio.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Programs</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/downloadmanagment.png</normaloff>:/categories/images/downloadmanagment.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Video</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/video.png</normaloff>:/categories/images/video.png</iconset>
-         </property>
-        </item>
-       </item>
-       <item>
-        <property name="text">
-         <string>Queues</string>
-        </property>
-        <property name="icon">
-         <iconset resource="../images.qrc">
-          <normaloff>:/categories/images/prio_0.png</normaloff>:/categories/images/prio_0.png</iconset>
-        </property>
-        <item>
-         <property name="text">
-          <string>Main Queue</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/tab.png</normaloff>:/categories/images/tab.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Queue #1</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/tab.png</normaloff>:/categories/images/tab.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Queue #2</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/tab.png</normaloff>:/categories/images/tab.png</iconset>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Queue #3</string>
-         </property>
-         <property name="icon">
-          <iconset resource="../images.qrc">
-           <normaloff>:/categories/images/tab.png</normaloff>:/categories/images/tab.png</iconset>
-         </property>
-        </item>
        </item>
       </widget>
      </item>
@@ -536,10 +347,10 @@
     <string>Quit</string>
    </property>
   </action>
-  <action name="actionStop_Download">
+  <action name="actionPause_Download">
    <property name="icon">
     <iconset resource="../images.qrc">
-     <normaloff>:/menu/images/stop.png</normaloff>:/menu/images/stop.png</iconset>
+     <normaloff>:/menu/images/media-playback-pause.png</normaloff>:/menu/images/media-playback-pause.png</iconset>
    </property>
    <property name="text">
     <string>Stop Download</string>
