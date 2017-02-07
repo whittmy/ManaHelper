@@ -158,13 +158,13 @@ QVariant modelDownloads::data(const QModelIndex &index, int role) const  {
 
             unit = "";
             if(speedInt < 1024){
-                unit = tr("bytes/sec");
+                unit = tr("bytes/s");
             }else if(speedInt < 1024*1024){
                 speedInt /= 1024;
-                unit = tr("KB/sec");
+                unit = tr("KB/s");
             }else{
                 speedInt /= 1024*1024;
-                unit = tr("MB/sec");
+                unit = tr("MB/s");
             }
             return QString("%1 %2").arg(speedInt).arg(unit);
         }
@@ -239,9 +239,9 @@ void modelDownloads::setFilterDownloads(int status=-1){
     //_logger->debug(QString("setFilterDownloads:%1").arg(status));
     QString filters1="",filters2="";
     if(status == -1)
-        filters1.append("status < "+QString::number(Status::DownloadStatus::Finished));
+        filters1.append("status != "+QString::number(Status::Finished));
     else
-        filters1.append("status = "+QString::number(Status::DownloadStatus::Finished));
+        filters1.append("status = "+QString::number(Status::Finished));
 
     QString filters="";
     if(filters1!=""){
@@ -259,31 +259,29 @@ void modelDownloads::setFilterDownloads(int status=-1){
 void modelDownloads::setHeaders(){
     //setHeaderData,设置列标题， 当model用于view显示时，便可看到效果
     _logger->debug("setHeaders");
-    setHeaderData(DownloadConstants::Attributes::ID, Qt::Horizontal, QObject::tr("ID")); //auto increment
-    setHeaderData(DownloadConstants::Attributes::FileName, Qt::Horizontal, QObject::tr("File Name"));
-    setHeaderData(DownloadConstants::Attributes::URL, Qt::Horizontal, QObject::tr("URL"));
-    setHeaderData(DownloadConstants::Attributes::Size, Qt::Horizontal, QObject::tr("Size"));
-    setHeaderData(DownloadConstants::Attributes::Progress, Qt::Horizontal, QObject::tr("Progress"));
-    setHeaderData(DownloadConstants::Attributes::Speed, Qt::Horizontal, QObject::tr("Transfer Rate"));
-    setHeaderData(DownloadConstants::Attributes::ElapseTime, Qt::Horizontal, QObject::tr("Elapsed Time"));
-    setHeaderData(DownloadConstants::Attributes::RemainingTime, Qt::Horizontal, QObject::tr("Time Left"));
-    setHeaderData(DownloadConstants::Attributes::SavePath, Qt::Horizontal, QObject::tr("Save to"));
-    setHeaderData(DownloadConstants::Attributes::Queue, Qt::Horizontal, QObject::tr("Queue"));
-    setHeaderData(DownloadConstants::Attributes::Status, Qt::Horizontal, QObject::tr("Status"));
-    setHeaderData(DownloadConstants::Attributes::AddedDate, Qt::Horizontal, QObject::tr("Date Added"));
-    setHeaderData(DownloadConstants::Attributes::Downloaded, Qt::Horizontal, QObject::tr("Finished"));
-    setHeaderData(DownloadConstants::Attributes::LastTryDate, Qt::Horizontal, QObject::tr("Last Try Date"));
-    setHeaderData(DownloadConstants::Attributes::Description, Qt::Horizontal, QObject::tr("Description"));
-    setHeaderData(DownloadConstants::Attributes::Referer, Qt::Horizontal, QObject::tr("Referer"));
-    setHeaderData(DownloadConstants::Attributes::Type, Qt::Horizontal, QObject::tr("Type"));
-    setHeaderData(DownloadConstants::Attributes::Pieces, Qt::Horizontal, QObject::tr("Pieces"));
-    setHeaderData(DownloadConstants::Attributes::Uuid, Qt::Horizontal, QObject::tr("uuid"));
+    setHeaderData(DownloadConstants::Attributes::ID, Qt::Horizontal, QObject::tr("md_ID")); //auto increment
+    setHeaderData(DownloadConstants::Attributes::FileName, Qt::Horizontal, QObject::tr("md_File Name"));
+    setHeaderData(DownloadConstants::Attributes::URL, Qt::Horizontal, QObject::tr("md_URL"));
+    setHeaderData(DownloadConstants::Attributes::Size, Qt::Horizontal, QObject::tr("md_Size"));
+    setHeaderData(DownloadConstants::Attributes::Progress, Qt::Horizontal, QObject::tr("md_Progress"));
+    setHeaderData(DownloadConstants::Attributes::Speed, Qt::Horizontal, QObject::tr("md_Transfer Rate"));
+    setHeaderData(DownloadConstants::Attributes::ElapseTime, Qt::Horizontal, QObject::tr("md_Elapsed Time"));
+    setHeaderData(DownloadConstants::Attributes::RemainingTime, Qt::Horizontal, QObject::tr("md_Time Left"));
+    setHeaderData(DownloadConstants::Attributes::SavePath, Qt::Horizontal, QObject::tr("md_Save to"));
+    setHeaderData(DownloadConstants::Attributes::Queue, Qt::Horizontal, QObject::tr("md_Queue"));
+    setHeaderData(DownloadConstants::Attributes::Status, Qt::Horizontal, QObject::tr("md_Status"));
+    setHeaderData(DownloadConstants::Attributes::AddedDate, Qt::Horizontal, QObject::tr("md_Date Added"));
+    setHeaderData(DownloadConstants::Attributes::Downloaded, Qt::Horizontal, QObject::tr("md_Finished"));
+    setHeaderData(DownloadConstants::Attributes::LastTryDate, Qt::Horizontal, QObject::tr("md_Last Try Date"));
+    setHeaderData(DownloadConstants::Attributes::Description, Qt::Horizontal, QObject::tr("md_Description"));
+    setHeaderData(DownloadConstants::Attributes::Referer, Qt::Horizontal, QObject::tr("md_Referer"));
+    setHeaderData(DownloadConstants::Attributes::Type, Qt::Horizontal, QObject::tr("md_Type"));
+    setHeaderData(DownloadConstants::Attributes::Pieces, Qt::Horizontal, QObject::tr("md_Pieces"));
+    setHeaderData(DownloadConstants::Attributes::Uuid, Qt::Horizontal, QObject::tr("md_uuid"));
     //removeColumn(12);
-
-
 }
 
-//插入下载记录, 并返回该插入记录的行号,若失败返回-1
+//插入下载记录, 并返回该插入记录的ID（返回行号会有诸多问题如排序、选择分类等）
 int modelDownloads::insertDownload(QString filename, //若filename为空，则取url的部分
                                    QString url,
                                    QString loc,
@@ -301,13 +299,13 @@ int modelDownloads::insertDownload(QString filename, //若filename为空，则�
 
     int size = 0; // make zero size by default
     int finished=0; // set status to unfinished
-    int status = 0;
+    int status = Status::Idle; //default Idle（waitting for ）
     int transferRate=0;
     int elapsedTime =0;
     int newrow = 0;
     if(!insertRow(newrow)){ //在newrow之前插入记录， 该记录的编号为newrow，即0
         _logger->error("rowfailed to insert!");
-        QMessageBox::critical(0,"failed","rowfailed to insert",QMessageBox::Ok);
+        QMessageBox::critical(0,tr("md_failed"),tr("md_rowfailed to insert"),QMessageBox::Ok);
         return -1;
     }
 
@@ -339,11 +337,11 @@ int modelDownloads::insertDownload(QString filename, //若filename为空，则�
     if(!submitAll()){ //手动提交
         QSqlError err = lastError();
         _logger->debug("failed to insert-"+err.text());
-        QMessageBox::critical(0,"failed","failed to insert-"+ err.text(),QMessageBox::Ok);
+        QMessageBox::critical(0,tr("failed"),tr("failed to insert-")+ err.text(),QMessageBox::Ok);
         return -1;
     }
 
-    return newrow; //返回ID
+    return _dm->getID(uuid); //返回ID
 }
 
 //删除指定行
@@ -351,11 +349,11 @@ void modelDownloads::deleteDownload(int row){
     _logger->debug(QString("deleteDownload:row=%1").arg(row));
     if(!removeRow(row)){ //删除函数
         _logger->debug("failed to delete");
-        QMessageBox::critical(0,"failed","failed to delete" + QString::number(row) + lastError().text(),QMessageBox::Ok);
+        QMessageBox::critical(0,tr("md_failed"),tr("md_failed to delete") + QString::number(row) + lastError().text(),QMessageBox::Ok);
     }else {
         if(!submitAll()){ //提交更新
             _logger->debug("failed to submit delete");
-            QMessageBox::critical(0,"failed","failed to submit delete-" + lastError().text() + QString::number(row),QMessageBox::Ok);
+            QMessageBox::critical(0,tr("md_failed"),tr("md_failed to submit delete-") + lastError().text() + QString::number(row),QMessageBox::Ok);
         }
         else{
             _logger->debug("delete successful");
@@ -597,4 +595,8 @@ void modelDownloads::setProgress(int row, qint64 progress, bool submit){
     _logger->debug(QString("setProgress,%1,%2").arg(row).arg(progress));
     setData(index(row, DownloadConstants::Attributes::Progress), progress);
     if(submit) submitAll();
+}
+
+DownloadsDBManager * modelDownloads::getDM(){
+    return _dm;
 }

@@ -40,7 +40,7 @@ public:
     };
 
     enum DownloadStatus{
-        Idle,
+        Idle,   //Idle理解为已安排下载但是正在队列中，如此key将添加任务时的立即下载去掉，所有添加的任务默认均为Idle（待下载状态），由任务管理去调度下载
         Failed,
         Paused,
         Downloading,

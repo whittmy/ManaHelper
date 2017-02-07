@@ -82,7 +82,9 @@ SOURCES += \
     util/xml_parser_upgrade.cpp \
     util/xml_parser_playurl.cpp \
     main.cpp \
-    download/downloadui.cpp
+    download/downloadui.cpp \
+    download/storethread.cpp \
+    download/welcomedialog.cpp
 
 
 
@@ -134,7 +136,9 @@ HEADERS  += \
     util/xml_parser_playurl.h \
     util/xml_parser_upgrade.h \
     systemtrayicon.h \
-    download/downloadui.h
+    download/downloadui.h   \
+    download/storethread.h \
+    download/welcomedialog.h
 
 UI_DIR= UI
 
@@ -158,13 +162,14 @@ FORMS    += \
     download/passworddialog.ui \
     download/devmanagerdialog.ui \
     download/upgradetipdialog.ui \
-    download/downloadui.ui
+    download/downloadui.ui \
+    download/welcomedialog.ui
 
 # browser-res
-RESOURCES += data/data.qrc htmls/htmls.qrc
+RESOURCES += data/data.qrc htmls/htmls.qrc \
+    misc.qrc
 
 #
-RESOURCES += images.qrc
 
 
 # browser >>>
@@ -193,7 +198,7 @@ target.path = $$[QT_INSTALL_EXAMPLES]/webenginewidgets/browser
 INSTALLS += target
 # <<<
 
-
+TRANSLATIONS = ManaHelper.ts
 
 DISTFILES += \
     ManaHelper \

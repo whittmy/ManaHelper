@@ -98,7 +98,7 @@ InvokeWrapper<Arg, R, C> invoke(R *receiver, void (C::*memberFun)(Arg))
     return wrapper;
 }
 
-const char *BrowserMainWindow::defaultHome = "http://www.nybgjd.com/x8_home/";
+const char *BrowserMainWindow::defaultHome = "http://www.nybgjd.com/x8_home/index.php";
 
 BrowserMainWindow::BrowserMainWindow(QWidget *parent, Qt::WindowFlags flags)
     : QMainWindow(parent, flags)
@@ -111,7 +111,7 @@ BrowserMainWindow::BrowserMainWindow(QWidget *parent, Qt::WindowFlags flags)
     ,mSiteParser(new SiteParser())
     ,_logger(new LogMe(this))
     ,_devdetector(new DevDetector((HANDLE)this->winId(), this))
-    ,mDevDlg(new DevManagerDialog(this))
+    ,mDevDlg(0)
     ,m_request(new HttpRequestor(this))
     ,s_downLoadui(new DownLoadUI(this))
 {
@@ -282,8 +282,8 @@ void BrowserMainWindow::slotAddTask(){
     //对title进行简单过来处理
     title = filterTitle(title);
 
-    QString url = "http://localhost/test/Yunflv/url.php?url=" + curUrl;
-
+    //QString url = "http://localhost/test/Yunflv/url.php?url=" + curUrl;
+    QString url = "http://www.nybgjd.com/erge/piapia_v3/parserX8Url?url=" + curUrl;
     qDebug()<<"title"<< title<< "slotAddTask:"<<url;
    // url = "http://localhost/test/Yunflv/url.php?url=http://tv.sohu.com/20140708/n401968741.shtml";
 
@@ -291,8 +291,6 @@ void BrowserMainWindow::slotAddTask(){
 }
 
 void BrowserMainWindow::slotDownLoadUI(){
-    //s_downLoadui->resize(800, 600);
-    //s_downLoadui->move(200,100);
     s_downLoadui->show();
 }
 
@@ -394,9 +392,9 @@ bool BrowserMainWindow::nativeEvent(const QByteArray &eventType, void *message, 
 
 
 void BrowserMainWindow::slotOpenDevice(){
-    DevManagerDialog *dlg = new DevManagerDialog(this);
-    if(mDevDlg->isHidden())
-        mDevDlg->show();
+    mDevDlg =  new DevManagerDialog(this);
+    mDevDlg->exec();    //模态对话框，不用担心弹出状态下重复点击
+    mDevDlg = NULL;
 }
 
 
@@ -755,12 +753,12 @@ void BrowserMainWindow::setupToolBar()
     //m_reloadIcon = style()->standardIcon(QStyle::SP_BrowserReload);
     m_reloadIcon = QIcon(QLatin1String(":refresh.png"));
     m_stopReload->setIcon(m_reloadIcon);
-
+    m_stopReload->setToolTip(tr("Refresh"));
     m_navigationBar->addAction(m_stopReload);
 
     // luokui add homepage>>
     m_homepage = new QAction(this);
-    m_homepage->setToolTip("Home Page");
+    m_homepage->setToolTip(tr("Home Page"));
     m_homepageIcon = QIcon(QLatin1String(":home.png"));
     m_homepage->setIcon(m_homepageIcon);
     m_navigationBar->addAction(m_homepage);
@@ -788,12 +786,13 @@ void BrowserMainWindow::setupToolBar()
     m_addtask->setDisabled(true);
     m_addtaskIcon = QIcon(QLatin1String(":addtask.png"));
     m_addtask->setIcon(m_addtaskIcon);
+    m_addtask->setToolTip(tr("add task"));
     m_navigationBar->addAction(m_addtask);
     connect(m_addtask, SIGNAL(triggered()), this, SLOT(slotAddTask()));
 
     //luokui download-list
     m_download = new QAction(this);
-    m_download->setToolTip("Add to downloading list");
+    m_download->setToolTip(tr("Add to downloading list"));
     m_downloadIcon = QIcon(QLatin1String(":download.png"));
     m_download->setIcon(m_downloadIcon);
     m_navigationBar->addAction(m_download);
@@ -805,7 +804,7 @@ void BrowserMainWindow::setupToolBar()
     //luokui device
     m_device = new QAction(this);
     m_device->setDisabled(true);//default
-    m_device->setToolTip("Device Manager");
+    m_device->setToolTip(tr("Device Manager"));
     m_deviceIcon = QIcon(QLatin1String(":device.png"));
     m_device->setIcon(m_deviceIcon);
     m_navigationBar->addAction(m_device);

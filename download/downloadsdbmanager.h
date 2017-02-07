@@ -84,7 +84,7 @@ public:
     qint64 getProgress(qint64 id);
     void setProgress(qint64 id,qint64 progress);
 
-//    int getID(qint64 id);
+    qint64 getID(QString uuid);
 //    void setID(qint64 id, qint64 id);
     //CRUD OPERATIONS END
 

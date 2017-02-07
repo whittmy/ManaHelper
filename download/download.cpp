@@ -49,10 +49,9 @@ Download::~Download(){
 // 新的任务，要确定Status中的两个数据，分别为：
 //setFileAlreadyBytes();
 //setBytesTotal();
-bool Download::newDownload(int row, const int ID, const QUrl &url, const QUuid &uuid, const QString &fileName, qint64 size)
+bool Download::newDownload(const int ID, const QUrl &url, const QUuid &uuid, const QString &fileName, qint64 size)
 {
     _logger->info(QString("newDownload: %1").arg(url.toString()));
-    _row = row;
     setUuid(uuid);
     setUrl(url); //该url为总url， 下载细节以分段url为准
     setID(ID);
@@ -80,7 +79,7 @@ bool Download::newDownload(int row, const int ID, const QUrl &url, const QUuid &
     _file = NULL;
     bool isOpened = false;
 
-    QString fileWithPath = QString(Paths::cacheDirPath()).append(fileNewName);
+    QString fileWithPath = QString(Paths::mvCachePath()).append(fileNewName);
     _logger->info(QString("FileNewName: [%1]| FileWithPath: [%2]").arg(fileNewName, fileWithPath));
 
     if (QFile::exists(fileWithPath)) {
@@ -103,7 +102,7 @@ bool Download::newDownload(int row, const int ID, const QUrl &url, const QUuid &
         _logger->info("file is downloading-status");
         //开始识别下载状态！！！
         bool newTask = false;
-        QDir dir(Paths::cacheDirPath());
+        QDir dir(Paths::mvCachePath());
         //按名字逆序排列，获取最后一个片段的状态(片段是一个接一个按顺序下载，一个完成后才进行下一个片段)
         QFileInfoList flist = dir.entryInfoList( QStringList()<< fileNewName+"*",
                                                  QDir::Files, QDir::Name|QDir::Reversed);
@@ -273,7 +272,12 @@ void Download::slot_onHttpReqFinished(REQ_TYPE type, QString rslt){
 
 const void Download::closeFile(){
     _logger->info("closeFile");
-    if(_file != NULL){
+     if(_file != NULL &&_file->isOpen()){
+         _logger->info("file is opened,and buffer-size="+QString::number(_buffer.size()));
+        if(_buffer.size() > 0){
+            _file->write(_buffer);
+            _buffer.clear();
+        }
         _file->flush();
         _file->close();
     }
@@ -433,7 +437,7 @@ void Download::doNextSeg(){
 
     //3.设置File, 以便下载上
     QString fileWithPath =  QString::asprintf("%s_mmh%03d.download",
-                                              QString(Paths::cacheDirPath()).append(_name).toStdString().c_str(),
+                                              QString(Paths::mvCachePath()).append(_name).toStdString().c_str(),
                                               mCurSegIdx);
     _logger->info("begin set new File:"+fileWithPath);
     this->setFile(new QFile(fileWithPath)); //_mmhXXX.download

@@ -14,7 +14,7 @@
 #include <download/download.h>
 #include "download/status.h"
 #include "util/logme.h"
-
+#include <QTimer>
 
 //每个任务的下载器
 class DLoader_common : public QObject
@@ -59,6 +59,8 @@ private slots:
     void slot_httpFinished(QObject *currentReply);
 //    void slot_progress(qint64 recv, qint64 total);
 
+    void onTimerOut();
+
 private:
     void removeFile(const Download *download);
 
@@ -77,6 +79,8 @@ private:
     static DLoader_common* mInstance;
 
     bool _bUserInterupt;
+
+    QTimer *mTimer;
 };
 
 #endif // DLOADER_USUAL_H

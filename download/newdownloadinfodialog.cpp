@@ -1,6 +1,5 @@
 ﻿#include "download/newdownloadinfodialog.h"
 #include "download/downloadsdbmanager.h"
-//#include "download/downloads.h"
 #include<QString>
 #include<QFileDialog>
 #include <QSettings>
@@ -13,16 +12,18 @@ NewDownloadInfoDialog::NewDownloadInfoDialog(QWidget *parent, QString title, QSt
     ui(new Ui::NewDownloadInfoDialog)
 {
     ui->setupUi(this);
-    QString key = "在线";
+    QString key = QStringLiteral("在线");
 
     int pos = title.lastIndexOf(key);
     title = title.left(title.length() - pos);
 
     ui->_lableTitle->setText(title);
+    ui->pushButton_3->setHidden(true);
 
     _title = title;
     _url = UrlInput;
-    _path = Paths::devicePath(ui->categoryBox->currentText());\
+    //_path = Paths::devicePath(ui->categoryBox->currentText());
+    _path = ui->categoryBox->currentText();
 
     qDebug() <<"NewDownloadInfoDialog: title="<< _title <<", url="<<_url<<", path=" <<_path;
 }
@@ -52,8 +53,8 @@ void NewDownloadInfoDialog::on_pushButton_4_clicked()
     this->destroy();
 }
 
-// 更新记录到, 先更新记录到model中,返回行号
-int NewDownloadInfoDialog::insertANewDownload(){
+// 更新记录到, 先更新记录到model中,返回ID值(返回行号超级不靠谱)
+qint64 NewDownloadInfoDialog::insertANewDownload(){
     //采集相关信息，更新这条记录到model中
     QFileInfo fileInfo(QUrl(_url).path());
 
@@ -67,8 +68,8 @@ int NewDownloadInfoDialog::insertANewDownload(){
     int queue = 0;
     int pieces = 10;
     QString uuid = QUuid::createUuid().toString();
-    int newrow = _model->insertDownload(_title, _url, loc,desc,cat,ref,queue,pieces,uuid);
-    return newrow;
+    qint64 ID = _model->insertDownload(_title, _url, loc,desc,cat,ref,queue,pieces,uuid);
+    return ID;
 }
 
 //download later
@@ -82,7 +83,7 @@ void NewDownloadInfoDialog::on_pushButton_2_clicked()
 //分类事件-触发，更新-刷新界面路径信息
 void NewDownloadInfoDialog::on_categoryBox_currentIndexChanged(int index)
 {
-    //qDebug()<< ui->categoryBox->currentText();
+    qDebug()<< ui->categoryBox->currentText();
 
 //    QSettings settings;
 //    switch(index){
@@ -93,6 +94,8 @@ void NewDownloadInfoDialog::on_categoryBox_currentIndexChanged(int index)
 //    case 4: ui->SaveToEdit->setText(settings.value("programDirectory").toString());break;
 //    case 5: ui->SaveToEdit->setText(settings.value("videoDirectory").toString());break;
 //    }
+
+    _path = ui->categoryBox->currentText();
 }
 
 void NewDownloadInfoDialog::setDownLoader(DownLoader *dl){
@@ -105,30 +108,16 @@ void NewDownloadInfoDialog::setDownLoader(DownLoader *dl){
 void NewDownloadInfoDialog::on_pushButton_3_clicked()
 {
     //先保存记录,返回插入行的ID值
-    int newrow = insertANewDownload();
-    if(newrow!=-1){
-        //start download
-//        QString filepath = ui->SaveToEdit->text();
+    int ID = insertANewDownload();
 
-//        Downloads *dl = new Downloads();
-//        dl->SetupDownloadData(localmodel,newrow,filepath);
-//        dl->StartDownload();
-//        connect(dl,SIGNAL(completed(QString)),this,SLOT(ADownloadCompleted(QString)));
-//        connect(dl,SIGNAL(updateinterface()),this,SLOT(UpdateInterface()));
+    DownloadsDBManager* dm = _model->getDM();
+    QString url = dm->getURL(ID);
+    QString filename = dm->getFileName(ID);
+    QString uuid = dm->getUuid(ID);
+    qint64 size = dm->getSize(ID);
 
-          //数据获取也通过model
-          qint64 ID =  _model->getID(newrow);//  ->data(localmodel->index(newrow, 0)).toInt();
-          QString url = _model->getURL(newrow);// data(localmodel->index(newrow,2)).toString();
-          QString filename = _model->getFileName(newrow);// data(localmodel->index(newrow, 1)).toString();
-          QString uuid = _model->getUuid(newrow);// data(localmodel->index(newrow, 17)).toString();
-          qint64 size = _model->getSize(newrow);
-//        Downloads *mManager = new Downloads(this);
-//        connect(mManager,SIGNAL(downloadComplete()),this,SLOT(finished()));
-//        connect(mManager,SIGNAL(progress(int)),this,SLOT(progress(int)));
-//        mManager->startDownload(QUrl(url));
 
-          mDownLoader->start(newrow, ID, url, uuid, filename, size);
-    }
+     mDownLoader->start(ID, url, uuid, filename, size);
 
     this->destroy();
 }

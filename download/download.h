@@ -35,12 +35,13 @@
 class Download : public QObject
 {
     Q_OBJECT
+#define BUFFER_SIZE     2097152 //2MB
 
 public:
     explicit Download(QObject *parent = 0);
     ~Download();
 
-    bool newDownload(const int row, const int ID, const QUrl &url, const QUuid &uuid=QUuid(), const QString &fileName=QString(), qint64 size=0);
+    bool newDownload(const int ID, const QUrl &url, const QUuid &uuid=QUuid(), const QString &fileName=QString(), qint64 size=0);
 
     void setFile(QFile *file);
     //QFile *file();
@@ -53,11 +54,24 @@ public:
         return QString();
     }
 
-    void writeFile(QByteArray arr){
-        _file->write(arr);
+    //写文件通过buffer进行
+    //当文件结束时，可能会有部分数据是无法通过该函数写入的，需要在closefile中处理
+    //当实际写入数据时，返回true
+    bool writeFile(QByteArray arr){
+        if(_buffer.size() >= BUFFER_SIZE){
+            qDebug() << "writeFile, buffersize="+QString::number(_buffer.size());
+            _file->write(_buffer);
+            _buffer.clear();
+            return true;
+        }
+        else{
+            _buffer.append(arr);
+        }
+
+        return false;
     }
     qint64 getFileSize() const{
-        return _file->size();
+        return _file->size()+_buffer.size();
     }
     bool removeFile() const{
         if(_file == NULL)
@@ -110,8 +124,6 @@ public:
     QNetworkReply::NetworkError errorCode() const;
     QString errorStr() const;
 
-    qint64 _row;
-
 
 signals:
     void sig_onTaskAdded(const Download* download);
@@ -140,6 +152,8 @@ private:
     LogMe *_logger;
     QNetworkReply::NetworkError _error;
     QString _lastError;
+
+    QByteArray _buffer;
 
 };
 

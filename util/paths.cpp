@@ -24,27 +24,27 @@
 #include <QMessageBox>
 #include <QTextStream>
 #include <QDebug>
+#include <QStandardPaths>
 
-#define TRANSLATION_PATH "c:/"
-#define DOC_PATH "c:/"
+#define MV_PATH "/mvcache/"
 
 QHash<QString, QString> Paths::mDevPathHash;
 
 void Paths::init(){
-    mDevPathHash.insert("drawcourse", QStringLiteral("艺术培养/小小画家/绘画课堂"));
-    mDevPathHash.insert("classic baby", QStringLiteral("艺术培养/我是歌手/经典儿歌"));
-    mDevPathHash.insert("pop baby", QStringLiteral("艺术培养/我是歌手/流行儿歌"));
-    mDevPathHash.insert("pop music", QStringLiteral("艺术培养/我是歌手/流行音乐"));
-    mDevPathHash.insert("happy dance", QStringLiteral("艺术培养/快乐舞蹈"));
-    mDevPathHash.insert("do it", QStringLiteral("艺术培养/动手实践"));
-    mDevPathHash.insert("guo xue qi meng", QStringLiteral("传统教育/国学启蒙"));
-    mDevPathHash.insert("cheng yu gu shi", QStringLiteral("传统教育/成语故事"));
-    mDevPathHash.insert("shu li luo ji", QStringLiteral("传统教育/数理逻辑"));
-    mDevPathHash.insert("bai ke zhi shi", QStringLiteral("传统教育/百科知识"));
-    mDevPathHash.insert("tang shi song ci", QStringLiteral("传统教育/唐诗宋词"));
-    mDevPathHash.insert("dong hua pian", QStringLiteral("娱乐天地/动画"));
-    mDevPathHash.insert("shi pin gu shi", QStringLiteral("娱乐天地/故事"));
-    mDevPathHash.insert("shi pin ying yu", QStringLiteral("英语教学/快乐英语"));
+//    mDevPathHash.insert("drawcourse", QStringLiteral("艺术培养/小小画家/绘画课堂"));
+//    mDevPathHash.insert("classic baby", QStringLiteral("艺术培养/我是歌手/经典儿歌"));
+//    mDevPathHash.insert("pop baby", QStringLiteral("艺术培养/我是歌手/流行儿歌"));
+//    mDevPathHash.insert("pop music", QStringLiteral("艺术培养/我是歌手/流行音乐"));
+//    mDevPathHash.insert("happy dance", QStringLiteral("艺术培养/快乐舞蹈"));
+//    mDevPathHash.insert("do it", QStringLiteral("艺术培养/动手实践"));
+//    mDevPathHash.insert("guo xue qi meng", QStringLiteral("传统教育/国学启蒙"));
+//    mDevPathHash.insert("cheng yu gu shi", QStringLiteral("传统教育/成语故事"));
+//    mDevPathHash.insert("shu li luo ji", QStringLiteral("传统教育/数理逻辑"));
+//    mDevPathHash.insert("bai ke zhi shi", QStringLiteral("传统教育/百科知识"));
+//    mDevPathHash.insert("tang shi song ci", QStringLiteral("传统教育/唐诗宋词"));
+//    mDevPathHash.insert("dong hua pian", QStringLiteral("娱乐天地/动画"));
+//    mDevPathHash.insert("shi pin gu shi", QStringLiteral("娱乐天地/故事"));
+//    mDevPathHash.insert("shi pin ying yu", QStringLiteral("英语教学/快乐英语"));
 
 
 }
@@ -59,8 +59,12 @@ QString Paths::docPath()
     return  STRINGIFY(DOC_PATH);
 }
 
+QString Paths::dbPath(){
+    QString path = QDir::toNativeSeparators(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/downloadsDB");
+    return path;
+}
 
-QString Paths::cacheDirPath()
+QString Paths::mvCachePath()
 {
 //    QSettings settings;
 //    settings.beginGroup("PreferencesDialog");
@@ -68,8 +72,18 @@ QString Paths::cacheDirPath()
 //    QString savePath = settings.value("saveDir", QDir::homePath()).toString() + QDir::toNativeSeparators("/");
 //    settings.endGroup();
 //    settings.endGroup();
-    QString savePath = "c:\\qt_test\\";
-    return savePath;
+
+    //QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    // ==>> "C:\Users\Administrator\AppData\Roaming\ManagerHelper\"
+    QString cachePath = QDir::toNativeSeparators(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + MV_PATH);
+    QDir dir(cachePath);
+    if(!dir.exists()){
+        if(dir.mkpath(cachePath)){
+            qDebug() << "create " << cachePath << " succussful";
+        }
+    }
+
+    return cachePath;
 }
 
 
@@ -87,9 +101,15 @@ void Paths::writeTxtFile(QString filepath, QString txt){
     //注意写入方式的选择，注意写完后的关闭操作！
 }
 
+void Paths::writeFileFromQrc(QString qrcpath, QString dest){
+
+}
+
 
 QString Paths::devicePath(QString txt){
-     return mDevPathHash.find(txt).value();
+    qDebug() << "devicePath="<< txt;
+     //return mDevPathHash.find(txt).value();
+    return txt;
 }
 
 QString Paths::filter(QString strTest){
@@ -103,9 +123,10 @@ QString Paths::filter(QString strTest){
     //  \x00-\x1f是不可见的控制字符，\x7f是delete，也不可见，所以替换掉
     QRegExp exp1("[\x01-0x1f]");
     strTest = strTest.replace(exp1, "");
-    qDebug() << "strTest========1=======" << strTest;
 
     QRegExp exp2("[\x7f]");
     strTest = strTest.replace(exp2, "");
+
+    qDebug() << "filter-filter rslt= " << strTest;
     return strTest;
 }

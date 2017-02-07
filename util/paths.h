@@ -32,11 +32,12 @@ public:
     static void init();
     static QString translationPath();
     static QString docPath();
-    static QString cacheDirPath();
+    static QString mvCachePath();
+    static QString dbPath();
     static void writeTxtFile(QString file, QString txt);
     static QString devicePath(QString txt);
     static QString  filter(QString strTest);
-
+    static void writeFileFromQrc(QString qrcpath, QString dest);
 private:
     static QHash<QString, QString> mDevPathHash;
 };

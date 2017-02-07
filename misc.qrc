@@ -50,5 +50,9 @@
     </qresource>
     <qresource prefix="/other">
         <file>html/devupgrade.html</file>
+        <file>ManaHelper.qm</file>
+    </qresource>
+    <qresource prefix="/bin">
+        <file>bin/ffmpeg.exe</file>
     </qresource>
 </RCC>

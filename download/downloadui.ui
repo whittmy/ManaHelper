@@ -20,7 +20,7 @@
    <string>Download Manager</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../images.qrc">
+   <iconset resource="../misc.qrc">
     <normaloff>:/menu/images/AddDownload.png</normaloff>:/menu/images/AddDownload.png</iconset>
   </property>
   <property name="toolButtonStyle">
@@ -308,7 +308,7 @@
          <string>Unfinished</string>
         </property>
         <property name="icon">
-         <iconset resource="../images.qrc">
+         <iconset resource="../misc.qrc">
           <normaloff>:/categories/images/folder_open.png</normaloff>:/categories/images/folder_open.png</iconset>
         </property>
        </item>
@@ -317,7 +317,7 @@
          <string>Finished</string>
         </property>
         <property name="icon">
-         <iconset resource="../images.qrc">
+         <iconset resource="../misc.qrc">
           <normaloff>:/categories/images/ok.png</normaloff>:/categories/images/ok.png</iconset>
         </property>
        </item>
@@ -328,7 +328,7 @@
   </widget>
   <action name="actionAdd_New">
    <property name="icon">
-    <iconset resource="../images.qrc">
+    <iconset resource="../misc.qrc">
      <normaloff>:/menu/images/add.png</normaloff>:/menu/images/add.png</iconset>
    </property>
    <property name="text">
@@ -340,7 +340,7 @@
   </action>
   <action name="actionQuit">
    <property name="icon">
-    <iconset resource="../images.qrc">
+    <iconset resource="../misc.qrc">
      <normaloff>:/menu/images/exit.png</normaloff>:/menu/images/exit.png</iconset>
    </property>
    <property name="text">
@@ -349,7 +349,7 @@
   </action>
   <action name="actionPause_Download">
    <property name="icon">
-    <iconset resource="../images.qrc">
+    <iconset resource="../misc.qrc">
      <normaloff>:/menu/images/media-playback-pause.png</normaloff>:/menu/images/media-playback-pause.png</iconset>
    </property>
    <property name="text">
@@ -358,7 +358,7 @@
   </action>
   <action name="actionRemove">
    <property name="icon">
-    <iconset resource="../images.qrc">
+    <iconset resource="../misc.qrc">
      <normaloff>:/menu/images/remove.png</normaloff>:/menu/images/remove.png</iconset>
    </property>
    <property name="text">
@@ -367,7 +367,7 @@
   </action>
   <action name="actionDownload_Now">
    <property name="icon">
-    <iconset resource="../images.qrc">
+    <iconset resource="../misc.qrc">
      <normaloff>:/menu/images/media-playback-start.png</normaloff>:/menu/images/media-playback-start.png</iconset>
    </property>
    <property name="text">
@@ -376,7 +376,7 @@
   </action>
   <action name="actionRedownload">
    <property name="icon">
-    <iconset resource="../images.qrc">
+    <iconset resource="../misc.qrc">
      <normaloff>:/menu/images/restart.png</normaloff>:/menu/images/restart.png</iconset>
    </property>
    <property name="text">
@@ -395,7 +395,7 @@
   </action>
   <action name="actionDelete_All_Completed">
    <property name="icon">
-    <iconset resource="../images.qrc">
+    <iconset resource="../misc.qrc">
      <normaloff>:/menu/images/delete.png</normaloff>:/menu/images/delete.png</iconset>
    </property>
    <property name="text">
@@ -404,7 +404,7 @@
   </action>
   <action name="actionOptions">
    <property name="icon">
-    <iconset resource="../images.qrc">
+    <iconset resource="../misc.qrc">
      <normaloff>:/menu/images/settings.png</normaloff>:/menu/images/settings.png</iconset>
    </property>
    <property name="text">
@@ -421,7 +421,7 @@
   </action>
   <action name="actionAbout">
    <property name="icon">
-    <iconset resource="../images.qrc">
+    <iconset resource="../misc.qrc">
      <normaloff>:/menu/images/about.png</normaloff>:/menu/images/about.png</iconset>
    </property>
    <property name="text">
@@ -433,7 +433,7 @@
   </action>
   <action name="actionArrange_Files">
    <property name="icon">
-    <iconset resource="../images.qrc">
+    <iconset resource="../misc.qrc">
      <normaloff>:/menu/images/sort.png</normaloff>:/menu/images/sort.png</iconset>
    </property>
    <property name="text">
@@ -442,7 +442,7 @@
   </action>
   <action name="actionTo_text_file">
    <property name="icon">
-    <iconset resource="../images.qrc">
+    <iconset resource="../misc.qrc">
      <normaloff>:/menu/images/text.png</normaloff>:/menu/images/text.png</iconset>
    </property>
    <property name="text">
@@ -451,7 +451,7 @@
   </action>
   <action name="actionFrom_text_file">
    <property name="icon">
-    <iconset resource="../images.qrc">
+    <iconset resource="../misc.qrc">
      <normaloff>:/menu/images/text.png</normaloff>:/menu/images/text.png</iconset>
    </property>
    <property name="text">
@@ -460,7 +460,7 @@
   </action>
   <action name="actionProperties">
    <property name="icon">
-    <iconset resource="../images.qrc">
+    <iconset resource="../misc.qrc">
      <normaloff>:/menu/images/batch.png</normaloff>:/menu/images/batch.png</iconset>
    </property>
    <property name="text">
@@ -473,7 +473,7 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
-  <include location="../images.qrc"/>
+  <include location="../misc.qrc"/>
  </resources>
  <connections/>
 </ui>

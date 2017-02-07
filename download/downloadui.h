@@ -24,6 +24,7 @@
 #include "download/downloader.h"
 #include "util/logme.h"
 #include "util/devdetector.h"
+#include <QSignalMapper>
 
 #include "util/appendix.h"
 
@@ -52,8 +53,10 @@ public:
     QSortFilterProxyModel *proxyModel;
     DownloadsDBManager *_dbMan;
     void clearCacheData();
-    void doCombine(int row, QString filename); //row为行号
-    void doStore(int row, QString filename);
+    void doCombine(qint64 id);
+    void doStore(qint64 id);
+
+    void doStart(qint64 id);
 
     void openAddTaskDlg(QString title, QString url);
     void setColumWidth();
@@ -77,6 +80,7 @@ public slots:
     void slotDownloadFailed(const Download*);
     void slotTimerOut();
 
+    void slotStoreRslt(QObject* obj);
 private slots:
     void on_actionAdd_New_triggered();
     void on_actionQuit_triggered();
@@ -99,8 +103,9 @@ private slots:
 
     void on_actionPause_Download_triggered();
 
-
+    void switchTaskStatus(qint64 id, int will_status);
     void on_DownloadsTable_clicked(const QModelIndex &index);
+
 protected:
 
 
@@ -111,7 +116,7 @@ private:
     void writeSettings();
     void _updateInterfaceByStatus(int status);
     void resetBtnStatus();
-
+    void trayMsg(QString msg, QString filename);
 private:
     Ui::DownLoadUI *ui;
     DownLoader* mDownLoader;
@@ -121,6 +126,8 @@ private:
     qint64 mLastSpeed;
 
     QTimer *mTimer;
+
+    QSignalMapper *_storeSignalMapper;
 };
 
 #endif // MAINWINDOW_H

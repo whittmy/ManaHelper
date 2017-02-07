@@ -50,8 +50,30 @@ DLoader_common::DLoader_common(QObject *parent) :
     _metaChangedSignalMapper = new QSignalMapper(this);
     _finishedSignalMapper = new QSignalMapper(this);
 
+    mTimer = new QTimer;
+    mTimer->setInterval(2000);
+    mTimer->start();
+
+    connect(mTimer, SIGNAL(timeout()), this, SLOT(onTimerOut()));
+
 }
 
+void DLoader_common::onTimerOut(){
+    //_logger->info("onTimerOut--, download-task cnt="+QString::number(_downloadHash->size()));
+    QHash<QNetworkReply*, Download*>::iterator iter =  _downloadHash->begin();
+
+    while(iter != _downloadHash->end()){
+        Status *s = iter.value()->status();
+        if(s->downloadStatus() != Status::Failed
+                && s->downloadStatus() != Status::Paused
+                && s->downloadStatus() != Status::Finished ){
+            //_logger->info("     update the task: " + iter.value()->name());
+            doSaveData(ACTION_UPDATE, iter.value());
+        }
+
+        iter ++;
+    }
+}
 
 DLoader_common::~DLoader_common(){
     delete _logger;
@@ -62,6 +84,9 @@ DLoader_common::~DLoader_common(){
     delete _readyReadSignalMapper;
     delete _metaChangedSignalMapper;
     delete _finishedSignalMapper;
+
+    mTimer->stop();
+    delete mTimer;
 }
 
 DLoader_common* DLoader_common::Instance(){
@@ -296,6 +321,8 @@ void DLoader_common::slot_replyMetaDataChanged(QObject *currentReply)
     //对于当前段的大小，还是要设置的,便于统计当前段的进度
     //进度计算比较粗略，按照 段号-段数以及当前段的进度来计算,详见Status;
     status->setBytesSegTotal(size);
+
+    doSaveData(ACTION_UPDATE, download);
 }
 
 //对应QNetworkReply中的某状态
@@ -308,12 +335,14 @@ void DLoader_common::slot_httpReadyRead(QObject *currentReply)
     QNetworkReply *reply = i.key();
     Download *download = i.value();
 
+    //执行过于频繁，影响性能！！！！！！
     if (download->bfileValid()) {
-        Status *status = download->status();
-        download->writeFile(reply->readAll());
-        status->setDownloadStatus(Status::Downloading);
-
-        doSaveData(ACTION_UPDATE, download);
+        if(download->writeFile(reply->readAll())){
+//            Status *status = download->status();
+//            status->setDownloadStatus(Status::Downloading);
+//            doSaveData(ACTION_UPDATE, download);
+        }
+        download->status()->setDownloadStatus(Status::Downloading);
     }
 }
 
@@ -370,6 +399,9 @@ void DLoader_common::slot_httpFinished(QObject *currentReply)
     //若非用户中断的自然完成，则认为当前段已完成。
     if(!_bUserInterupt && download->errorCode()==QNetworkReply::NoError){
         _logger->info(QString("seg-%1 had completed!").arg(download->getCurSegIdx()));
+        //!!!!!!!!!! luokui
+        download->closeFile();
+        //!!!!!!!!!!!!!
         download->doNextSeg();
 
         //继续开始新段下载

@@ -16,6 +16,9 @@ DevManagerDialog::DevManagerDialog(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    setAttribute(Qt::WA_DeleteOnClose); //自动释放
+    setWindowTitle(/*QStringLiteral("设备管理-开发完善中....,暂未开放")*/ tr("dev_device manager"));
+
     _treeView_dir = new MyTreeView(this);
     _treeView_dir->setObjectName(QStringLiteral("treeView_dir"));
     _treeView_dir->setGeometry(QRect(10, 20, 210, 431));
@@ -26,7 +29,7 @@ DevManagerDialog::DevManagerDialog(QWidget *parent) :
 //    filters<<QString("*.jpeg")<<QString("*.jpg")<<QString("*.png")<<QString("*.tiff")<<QString("*.gif")<<QString("*.bmp");
 
     MyTreeModel *model = new MyTreeModel (_treeView_dir);
-    model->setHorizontalHeaderLabels(QStringList()<<QStringLiteral("directory"));// <<QStringLiteral("info"));
+    model->setHorizontalHeaderLabels(QStringList()<</*QStringLiteral("directory"))*/ tr("dev_directory"));// <<QStringLiteral("info"));
     _treeView_dir->setModel(model);
     addTopItemsForTreeView(model, QDir(getDriver()));
 
@@ -38,7 +41,7 @@ DevManagerDialog::DevManagerDialog(QWidget *parent) :
 
     //qlistview
     QStandardItemModel *listmodel = new QStandardItemModel(ui->listView_files);
-    listmodel->setHorizontalHeaderLabels(QStringList()<<"sel"<<"filename"<<"size");
+    listmodel->setHorizontalHeaderLabels(QStringList()<<tr("dev_sel")<<tr("dev_filename")<<tr("dev_size"));
     ui->listView_files->setModel(listmodel);
 }
 

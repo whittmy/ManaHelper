@@ -65,7 +65,7 @@ bool DownloadsDBManager::openDB()
     db.setDatabaseName(path);
 #else
     // NOTE: File exists in the application private folder, in Symbian Qt implementation
-    db.setDatabaseName("downloadsDB");
+    db.setDatabaseName(Paths::dbPath());
 #endif
 
     // Open databasee
@@ -553,6 +553,7 @@ qint64 DownloadsDBManager::getStatus(qint64 id){
 }
 
 void DownloadsDBManager::setStatus(qint64 id, qint64 status){
+    qDebug() << "setStatus:" << id << ", " << status;
     if (this->openDB()) {
         QSqlQuery query(db);
         query.prepare("UPDATE downloadsTable SET status = "+QString::number(status)+" WHERE id =" +QString::number(id)+ ";");
@@ -1032,17 +1033,17 @@ void DownloadsDBManager::initStartUpStatus(){
 
 
 
-/*
-qint64 DownloadsDBManager::getID(qint64 id){
+
+qint64 DownloadsDBManager::getID(QString uuid){
     if (this->openDB()) {
         QSqlQuery query(db);
-        query.prepare("SELECT ID from downloadsTable WHERE id =" +QString::number(id)+ ";");
+        query.prepare("SELECT ID from downloadsTable WHERE uuid ='" +uuid+ "';");
         if (query.exec()){
             query.first();
             qint64 p = query.value(0).toLongLong();
             return p;
         } else {
-            QMessageBox::critical(0, qApp->tr("Cannot get the size of the file."),
+            QMessageBox::critical(0, qApp->tr("Cannot get the ID of the file."),
                                   query.lastError().text(), QMessageBox::Cancel);
         }
     } else {
@@ -1054,6 +1055,7 @@ qint64 DownloadsDBManager::getID(qint64 id){
     return 0;
 }
 
+/*
 void DownloadsDBManager::setID(qint64 id, qint64 id){
     if (this->openDB()) {
         QSqlQuery query(db);

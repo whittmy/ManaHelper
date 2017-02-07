@@ -1,4 +1,4 @@
-/****************************************************************************
+﻿/****************************************************************************
 **
 ** Copyright (C) 2015 The Qt Company Ltd.
 ** Contact: http://www.qt.io/licensing/
@@ -122,7 +122,7 @@ BrowserApplication::BrowserApplication(int &argc, char **argv)
 {
     //设置注册表相关表示
     QCoreApplication::setOrganizationName(QLatin1String("Lemoon"));
-    QCoreApplication::setApplicationName(QLatin1String("ManagerHelper"));
+    QCoreApplication::setApplicationName(QStringLiteral("下载助手"));
     QCoreApplication::setApplicationVersion(QLatin1String("1.0"));
     QString serverName = QCoreApplication::applicationName()
         + QString::fromLatin1(QT_VERSION_STR).remove('.') + QLatin1String("webengine");
@@ -157,10 +157,11 @@ BrowserApplication::BrowserApplication(int &argc, char **argv)
         }
     }
 
+
 #ifndef QT_NO_OPENSSL
     if (!QSslSocket::supportsSsl()) {
-    QMessageBox::information(0, "Demo Browser",
-                 "This system does not support OpenSSL. SSL websites will not be available.");
+    QMessageBox::information(0, tr("Demo Browser"),
+                 tr("This system does not support OpenSSL. SSL websites will not be available."));
     }
 #endif
 
@@ -385,8 +386,12 @@ bool BrowserApplication::isTheOnlyBrowser() const
 
 void BrowserApplication::installTranslator(const QString &name)
 {
+    qDebug() << "installTranslator:" << name<<", pos:"<<QLibraryInfo::location(QLibraryInfo::TranslationsPath);
     QTranslator *translator = new QTranslator(this);
-    translator->load(name, QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+    //translator->load(name, QLibraryInfo::location(QLibraryInfo::TranslationsPath));
+    //luokui>>
+    translator->load(":/other/ManaHelper.qm");
+
     QApplication::installTranslator(translator);
 }
 

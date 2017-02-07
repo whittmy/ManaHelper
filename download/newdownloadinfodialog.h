@@ -28,7 +28,7 @@ private slots:
     void on_pushButton_2_clicked();
     void on_categoryBox_currentIndexChanged(int index);
     void on_pushButton_3_clicked();
-    int insertANewDownload();
+    qint64 insertANewDownload();
 
 
 private:

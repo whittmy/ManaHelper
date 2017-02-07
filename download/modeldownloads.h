@@ -74,6 +74,8 @@ public:
 
     qint64 getProgress(int row);
     void setProgress(int row, qint64 progress, bool submit=true);
+
+    DownloadsDBManager * getDM();
 signals:
 
 public slots:

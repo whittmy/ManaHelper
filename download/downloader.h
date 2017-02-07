@@ -41,7 +41,7 @@ class DownLoader : public QObject
 public:
     explicit DownLoader(QObject *parent = 0);
     ~DownLoader();
-    void start(const int row, const int ID, const QString &url, const QUuid &uuid, const QString &fileName, qint64 size);
+    void start(const int ID, const QString &url, const QUuid &uuid, const QString &fileName, qint64 size);
     void pause(const QUuid &uuid);
     void remove(const QUuid &uuid);
 

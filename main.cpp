@@ -9,7 +9,7 @@
 
 #include "download/downloadui.h"
 
-
+#include <QStandardPaths>
 
 static QString strPidFile;
 
@@ -34,7 +34,7 @@ void writePidFile()
 int main(int argc, char *argv[])
 {
     /* */
-//    QApplication app(argc, argv);
+    //QApplication app(argc, argv);
 //    //---- 设置应用信息  QSettings需先设置这些， 在浏览器模块部分，这些代码都包含了，省略 >>>>>>>>
 //    app.setOrganizationName("LanMeng");
 //    app.setOrganizationDomain("lemoon.com");
@@ -48,6 +48,9 @@ int main(int argc, char *argv[])
 //    app.setWindowIcon(QIcon(":icons/images/icon.png"));
 
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+    //qDebug()<< QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    //return app.exec();
 
     //if (!strPidFile.isEmpty())
     //        writePidFile();

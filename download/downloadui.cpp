@@ -10,6 +10,7 @@
 #include "util/paths.h"
 
 #include "util/codec.h"
+#include "storethread.h"
 
 
 
@@ -17,7 +18,8 @@ DownLoadUI::DownLoadUI(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::DownLoadUI),
     _logger(new LogMe(this)),
-    mDownLoader(new DownLoader())
+    mDownLoader(new DownLoader()),
+    _storeSignalMapper(new QSignalMapper(this))
 {
     ui->setupUi(this);
 
@@ -25,7 +27,6 @@ DownLoadUI::DownLoadUI(QWidget *parent) :
     ui->menuBar->hide();
 
     mTimer = new QTimer();
-    connect(mTimer, SIGNAL(timeout()), this, SLOT(slotTimerOut()));
 
     //设置定时器每个多少毫秒发送一个timeout()信号
     mTimer->setInterval(1000);
@@ -68,20 +69,23 @@ DownLoadUI::DownLoadUI(QWidget *parent) :
     ui->DownloadsTable->hideColumn(DownloadConstants::Attributes::Downloaded);
     ui->DownloadsTable->hideColumn(DownloadConstants::Attributes::Description);
     ui->DownloadsTable->hideColumn(DownloadConstants::Attributes::Type);
+
+    ui->DownloadsTable->horizontalHeader()->setSectionsClickable(false);
+    ui->DownloadsTable->horizontalHeader()->setSectionsMovable(false);
+    ui->DownloadsTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     //ui->DownloadsTable->horizontalHeader()->setStretchLastSection(false);//关键
     setColumWidth();
     //ui->DownloadsTable->resizeColumnsToContents();
 
     //signal-slot of DownLoader
     connect(mDownLoader, SIGNAL(downloadInitialed(const Download*)), this, SLOT(slotDownloadInited(const Download*)));
-    connect(mDownLoader, SIGNAL(downloadInitialed(const Download*)), this, SLOT(slotUpdateUrlsTable(const Download*)));
     connect(mDownLoader, SIGNAL(downloadPaused(const Download*)), this, SLOT(UpdateInterface()));
-    connect(mDownLoader, SIGNAL(downlaodResumed(const Download*)), this, SLOT(slotUpdateUrlsTable(const Download*)));
     connect(mDownLoader, SIGNAL(downlaodResumed(const Download*)), this, SLOT(slotDownloadResumed(const Download*)));
-    connect(mDownLoader, SIGNAL(downloadUpdated(const Download*)), this, SLOT(slotUpdateUrlsTable(const Download*)));
     connect(mDownLoader, SIGNAL(downloadRemoved(const Download*)), this, SLOT(slotDownloadRemoved(const Download*)));
     connect(mDownLoader, SIGNAL(downloadFinished(const Download*)), this, SLOT(slotDownloadCompleted(const Download*)));
     connect(mDownLoader, SIGNAL(downloadFailed(const Download*)), this, SLOT(slotDownloadFailed(const Download*)));
+
+    connect(mTimer, SIGNAL(timeout()), this, SLOT(slotTimerOut()));
 
 
     clearCacheData();
@@ -102,7 +106,6 @@ void DownLoadUI::initWindowInfo(){
 
     QDesktopWidget* desktop = QApplication::desktop(); // =qApp->desktop();也可以
     move((desktop->width()-w)/2, (desktop->height()-h)/2-30);
-
 }
 
 void DownLoadUI::resetBtnStatus(){
@@ -135,9 +138,9 @@ void DownLoadUI::slotTimerOut(){
     //user selected a parent category
     QString parentCat = currentCol->text(ui->categoriesTree->currentColumn());
     int statusCat;
-    if(parentCat.compare("Unfinished")==0){
+    if(parentCat.compare(tr("ui_Unfinished"))==0){
         statusCat= -1 ;//only unfinished
-    }else if(parentCat.compare("Finished")==0){
+    }else if(parentCat.compare(tr("ui_Finished"))==0){
         statusCat = 0;
     }
     model->setFilterDownloads(statusCat);
@@ -160,6 +163,8 @@ void DownLoadUI::slotTimerOut(){
 
 DownLoadUI::~DownLoadUI()
 {
+    _logger->info("-------------------    ~DownLoadUI --------------");
+
     delete ui;
     delete _logger;
     delete mDownLoader;
@@ -215,7 +220,7 @@ void DownLoadUI::openAddTaskDlg(QString title, QString url){
 void DownLoadUI::on_actionQuit_triggered()
 {
     _logger->debug("on_actionQuit_triggered");
-    int reply = QMessageBox::warning(this,"Confirm","Are you sure you want to quit?",QMessageBox::Yes,QMessageBox::No);
+    int reply = QMessageBox::warning(this,tr("ui_Confirm"),tr("ui_Are you sure you want to quit?"),QMessageBox::Yes,QMessageBox::No);
     if(reply==QMessageBox::Yes){
         writeSettings();
         qApp->quit();
@@ -225,9 +230,9 @@ void DownLoadUI::on_actionQuit_triggered()
 //两个事儿， 托盘图标 及其 菜单定义
 int DownLoadUI::CreateSystemTrayIcon(){
     _logger->debug("CreateSystemTrayIcon");
-    QAction *ShowHideAction = new QAction("Show/Hide Interface",this);
+    QAction *ShowHideAction = new QAction(tr("ui_Show/Hide Interface"),this);
     connect(ShowHideAction, SIGNAL(triggered()), this, SLOT(ShowHideInterface()));
-    QAction *QuitAction = new QAction("Quit",this);
+    QAction *QuitAction = new QAction(tr("ui_Quit"),this);
     connect(QuitAction, SIGNAL(triggered()), this, SLOT(on_actionQuit_triggered()));
 
     TrayIconMenu = new QMenu();
@@ -395,9 +400,9 @@ void DownLoadUI::on_categoriesTree_itemSelectionChanged(){
     //user selected a parent category
     QString parentCat = currentCol->text(ui->categoriesTree->currentColumn());
 
-    if(parentCat.compare("Unfinished")==0){
+    if(parentCat.compare(tr("ui_Unfinished"))==0){
         statusCat= -1 ;//only unfinished
-    }else if(parentCat.compare("Finished")==0){
+    }else if(parentCat.compare(tr("ui_Finished"))==0){
         statusCat = 0;
     }
     model->setFilterDownloads(statusCat);
@@ -452,7 +457,7 @@ void DownLoadUI::_updateInterfaceByStatus(int status){
         break;
 
 
-    case Status::Idle:
+    //case Status::Idle:
     case Status::Failed:
         ui->actionDownload_Now->setEnabled(true);
         ui->actionPause_Download->setEnabled(false);
@@ -540,11 +545,11 @@ void DownLoadUI::on_actionDownload_Now_triggered()
     int row = -1;
     foreach (index, indexes) {
         row = index.row();
-        int ID = model->getID(row);
-        QString url = model->getURL(row);
-        QString filename = model->getFileName(row);
-        QString uuid = model->getUuid(row);
-        qint64 size = model->getSize(row);
+        qint64 ID = model->getID(row);
+//        QString url = model->getURL(row);
+//        QString filename = model->getFileName(row);
+//        QString uuid = model->getUuid(row);
+//        qint64 size = model->getSize(row);
         Status::DownloadStatus s = (Status::DownloadStatus)model->getStatusOrg(row);
 
         _logger->info(QString("cur status:%1").arg(Status::transDownLoadString(s)));
@@ -555,32 +560,46 @@ void DownLoadUI::on_actionDownload_Now_triggered()
             _logger->info(QString("ignore operation"));
             return;
 
-        case Status::Idle:
+       // case Status::Idle:
         case Status::Failed:
         case Status::Paused:
             //开始下载
-            mDownLoader->start(row, ID, url, uuid, filename, size);
+            //mDownLoader->start(ID, url, uuid, filename, size);
+            doStart(ID);
             return;
 
         //顺序执行
         case Status::WaitCombine:
-            doCombine(row, filename);
-
+            doCombine(ID);
+            return;
         case Status::WaitTrans:
-
         case Status::WaitStore:
-            doStore(row, filename);
+            doStore(ID);
             return;
         }
     }
 }
 
+void DownLoadUI::switchTaskStatus(qint64 id, int will_status){
+    if(will_status == Status::WaitCombine){
+        doCombine(id);
+    }
+    else if(will_status == Status::WaitStore){
+        doStore(id);
+    }
+    else if(will_status == Status::Finished){
+        trayMsg(tr("ui_Download Completed"), _dbMan->getFileName(id));
+    }
+    else if(will_status == Status::Failed){
+        trayMsg(tr("ui_Download Failed"), _dbMan->getFileName(id));
+    }
+}
 
 //槽：下载完成
 int DownLoadUI::slotDownloadCompleted(const Download *download){
-    _logger->debug("ADownloadCompleted");
+    _logger->debug("slotDownloadCompleted");
     //更新状态
-    model->setStatus(download->_row, Status::WaitCombine);
+    _dbMan->setStatus(download->ID(), Status::WaitCombine);
 
     //slotUpdateUrlsTable(download);
 
@@ -588,48 +607,61 @@ int DownLoadUI::slotDownloadCompleted(const Download *download){
         ((Download*)download)->closeFile();
         ((Download*)download)->setFile(0);
     }
+    switchTaskStatus(download->ID(), Status::WaitCombine);
 
+    /*
     QString name = Paths::filter(download->name());
 
     //begin to combine
     if(download->getSegCnt() == 1){
-        QDir dir(Paths::cacheDirPath());
+        QDir dir(Paths::mvCachePath());
         QFileInfoList flist = dir.entryInfoList( QStringList()<< name+"*",
                                                  QDir::Files, QDir::Name|QDir::Reversed);
         foreach(QFileInfo p, flist){
-            QFile(p.absoluteFilePath()).rename(Paths::cacheDirPath() + name + ".mp4"); //rename 一定要全路径
-            model->setStatus(download->_row, Status::WaitStore);
+            QFile(p.absoluteFilePath()).rename(Paths::mvCachePath() + name + ".mp4"); //rename 一定要全路径
+            _dbMan->setStatus(download->ID(), Status::WaitStore);
             break;
         }
     }
     else{
         Codec c;
-        c.setFileInfo(Paths::cacheDirPath(), name);
+        c.setFileInfo(Paths::mvCachePath(), name);
         if(!c.concat().isEmpty())
-            model->setStatus(download->_row, Status::WaitStore);
+            _dbMan->setStatus(download->ID(), Status::WaitStore);
     }
 
-
-
-    TrayIcon->showMessage("Download Completed", download->name(), QSystemTrayIcon::Information, 5000);
-    if(isHidden()){
-        if(!TrayIcon->blinking)
-            TrayIcon->setBlink(true);
+    if(_dbMan->getStatus(download->ID()) == Status::WaitStore){
+        switchTaskStatus(download->ID(), Status::WaitStore);
     }
+    else{
+        _logger->error("doCombine failed!");
+    }
+    */
 
     return 0;
 }
 
+//trayMsg("Download Completed", download->name());
 
-void DownLoadUI::doStore(int row, QString filename){
-    _logger->info("doStore");
-    if(model->getStatusOrg(row) != Status::WaitStore)
+void DownLoadUI::trayMsg(QString msg, QString filename){
+    TrayIcon->showMessage(msg, filename, QSystemTrayIcon::Information, 5000);
+    if(isHidden()){
+        if(!TrayIcon->blinking)
+            TrayIcon->setBlink(true);
+    }
+}
+
+void DownLoadUI::doStore(qint64 id){
+    _logger->info("doStore====" + QString::number(id)+", "+_dbMan->getFileName(id));
+    if(_dbMan->getStatus(id) != Status::WaitStore)
         return;
+    QString filename = Paths::filter(_dbMan->getFileName(id));
 
     //获取任务的相关信息
-    QString destPath = model->getSaveLocation(row);
-    if(!QFile(destPath).exists()){
-        QMessageBox::warning(this, "device error", "please check your device!");
+    QString destPath = QDir::toNativeSeparators(DevDetector::getDevPath() + _dbMan->getSaveLocation(id));
+    if(!QDir(destPath).exists()){
+        //QMessageBox::warning(this, "device error", "please check your device!");
+        _logger->error("doStore failed for without device!!,"+destPath);
         return;
     }
 
@@ -637,67 +669,128 @@ void DownLoadUI::doStore(int row, QString filename){
         destPath = destPath + "/";
     }
 
-    QString srcFilePath = Paths::cacheDirPath() + filename + ".mp4";
+    QString srcFilePath = Paths::mvCachePath() + filename + ".mp4";
     QString destFilePath = destPath + filename + ".mp4";
 
-    //开始拷贝到目的地,先判断设备
-    QFile f(srcFilePath);
-    if(f.copy(srcFilePath, destFilePath)){
+    StoreThread* pthread = new StoreThread();
+    pthread->setCopyInfo(id, srcFilePath, destFilePath);
+
+    connect(pthread, SIGNAL(sig_storerlst()), _storeSignalMapper, SLOT(map()));
+    _storeSignalMapper->setMapping(pthread, pthread);
+    connect(_storeSignalMapper, SIGNAL(mapped(QObject*)), this, SLOT(slotStoreRslt(QObject*)));
+
+    pthread ->start();
+//    //开始拷贝到目的地,先判断设备
+//    QFile f(srcFilePath);
+//    if(f.copy(srcFilePath, destFilePath)){
+//        //拷贝完成，先设置状态
+//        _dbMan->setStatus(id, Status::Finished);
+
+//        //清除缓存
+//        f.remove();
+
+//        switchTaskStatus(id, Status::Finished);
+//    }
+}
+
+void DownLoadUI::slotStoreRslt(QObject *obj){
+    qDebug() << "slotStoreRslt(*obj)" ;
+    if(obj == NULL)
+        return;
+
+    StoreThread *pThread = (StoreThread *) obj;
+    if(pThread->bComplete()){
         //拷贝完成，先设置状态
-        model->setStatus(row, Status::Finished);
+        _dbMan->setStatus(pThread->getID(), Status::Finished);
 
         //清除缓存
-        f.remove();
+        QFile(pThread->getSrcPath()).remove();
+        switchTaskStatus(pThread->getID(), Status::Finished);
+
+        _logger->info("slotStoreRslt  ok");
     }
+    else {
+        _logger->info("slotStoreRslt  failed");
+    }
+
 }
+
+void DownLoadUI::doStart(qint64 id){
+    _logger->info("doStart-" + QString::number(id) + ", " + _dbMan->getFileName(id));
+    Status::DownloadStatus status =  (Status::DownloadStatus)_dbMan->getStatus(id);
+    if(status == Status::Downloading
+            || status == Status::Finished){
+        _logger->info("the task is downloading/finished status, we dont start it");
+        return;
+    }
+
+    QString url = _dbMan->getURL(id);
+    QString filename =  _dbMan->getFileName(id);
+    QString uuid = _dbMan->getUuid(id);
+    qint64 size = _dbMan->getSize(id);
+
+    //开始下载
+    mDownLoader->start(id, url, uuid, filename, size);
+}
+
 
 //合并文件,并更新任务状态
 //目前是按照 mp4扩展名输出的。
-void DownLoadUI::doCombine(int row, QString filename){
-    _logger->info("doCombine- " + QString::number(model->getStatusOrg(row)));
-    if(model->getStatusOrg(row) != Status::WaitCombine)
+void DownLoadUI::doCombine(qint64 id){
+    _logger->info("doCombine- " + QString::number(id)+", "+_dbMan->getFileName(id));
+    if(_dbMan->getStatus(id) != Status::WaitCombine)
         return;
 
-    QDir dir(Paths::cacheDirPath());
+    QString filename = Paths::filter(_dbMan->getFileName(id));
+    QDir dir(Paths::mvCachePath());
     //按名字排列，获取最后一个片段的状态(片段是一个接一个按顺序下载，一个完成后才进行下一个片段)
     QFileInfoList flist = dir.entryInfoList( QStringList()<< filename+"*",
                                              QDir::Files, QDir::Name);
-    QString srcFilePath;
+   QString srcFilePath;
     int size = flist.size(); //获取段数
+    qDebug() << "filter the cache for " << filename+"*, and get cache cnt:" << size;
     if(size == 1){
+        _logger->info(" go combine switch for single-cache!!");
         QFileInfo fi =  flist.at(0);
-//        int dotpos = fi.fileName().lastIndexOf(".");
-//        QString ext = fi.fileName().right(fi.fileName().length() - dotpos); // 如 .mp4
-
-//        QFile f(fi.absoluteFilePath());
-//        if(f.rename(QString("%1%2").arg(filename).arg(ext))){
-//            //改名成功，更新任务状态
-//            model->setStatus(row, Status::WaitStore, true);
-
-//            srcFilePath = fi.absolutePath() + filename + ".mp4";
-//        }
-        QString newName = filename + ".mp4";
+        QString newName = Paths::mvCachePath() + filename + ".mp4";
         QFile f(fi.absoluteFilePath());
         if(f.exists()){
-            _logger->info("begin " + fi.absoluteFilePath() + " to " + newName);
+            _logger->info("rename begin " + fi.absoluteFilePath() + " to " + newName);
+            if(f.fileName().compare(filename+".mp4", Qt::CaseInsensitive) == 0){
+                _logger->info("same as destname");
+                srcFilePath =  newName;
+            }
+            else if(f.rename( newName)){ //目标文件名要带路径
+                //改名成功，更新任务状态
+                _logger->info("successfull rename to "+newName);
+                srcFilePath =  newName;
+            }
+            else{
+                _logger->error("doCombine-rename failed:"+newName);
+            }
         }
-        if(f.rename(Paths::cacheDirPath() + newName)){ //目标文件名要带路径
-            //改名成功，更新任务状态
-            _logger->info("rename to "+newName);
-            srcFilePath = Paths::cacheDirPath() + newName;
+        else{
+            _dbMan->setStatus(id, Status::Failed);
+            switchTaskStatus(id, Status::Failed);
+            return;
         }
     }
     else if(size > 1){
+        _logger->info(" go combine switch for multi-cache!!");
         //合并文件
         Codec cd;
-        cd.setFileInfo(Paths::cacheDirPath(),  filename);
+        cd.setFileInfo(Paths::mvCachePath(),  filename);
         srcFilePath = cd.concat();
     }
 
     //设置状态
     if(!srcFilePath.isEmpty()){
-        _logger->info("combined to file:"+srcFilePath);
-        model->setStatus(row, Status::WaitStore, true);
+        _logger->info("combined sucessfully:"+srcFilePath);
+        _dbMan->setStatus(id, Status::WaitStore);
+        switchTaskStatus(id, Status::WaitStore);
+    }
+    else{
+        _logger->error("doCombine failed!!!");
     }
 }
 
@@ -709,7 +802,7 @@ void DownLoadUI::on_actionRemove_triggered()
     selectionModel= ui->DownloadsTable->selectionModel();
     QModelIndexList indexes = selectionModel->selectedRows(DownloadConstants::Attributes::ID);//DownloadConstants::Attributes::FileName
     int row = -1;
-    int reply = QMessageBox::question(this,"Confirm","Do you really want to delete these " +QString::number(indexes.count()) +" download(s)?",QMessageBox::Yes , QMessageBox::No);
+    int reply = QMessageBox::question(this,tr("ui_Confirm"),tr("ui_Do you really want to delete these ") +QString::number(indexes.count()) +tr("ui_ download(s)?"),QMessageBox::Yes , QMessageBox::No);
     if(reply == QMessageBox::Yes){
         //顺序遍历会出问题的
 //        foreach (QModelIndex index, indexes) { //循环遍历
@@ -748,14 +841,19 @@ void DownLoadUI::clearCacheOnStart(){
     qDebug() << names;
 
     //遍历缓存目录， 删除不在“下载中”中的文件
-    QDir dir(Paths::cacheDirPath());
+    QDir dir(Paths::mvCachePath());
     QFileInfoList flist = dir.entryInfoList(QDir::Files);
     foreach(QFileInfo p, flist){
         QString filename = p.fileName();
         int pos = filename.lastIndexOf("_mmh");
-        if(pos != -1)
+        if(pos != -1){
             filename = filename.mid(0, pos);
-
+        }
+        else{
+            pos = filename.lastIndexOf(".mp4");
+            if(pos != -1)
+                filename = filename.mid(0, pos);
+        }
         if(!names.contains(filename)){
             _logger->info("delete cache file:" + filename);
             QFile(p.absoluteFilePath()).remove();
@@ -766,7 +864,7 @@ void DownLoadUI::clearCacheOnStart(){
 
 void DownLoadUI::clearCacheByName(QString fileName){
     _logger->info("into clearCacheByName: "+ fileName);
-    QString cachePath = Paths::cacheDirPath();
+    QString cachePath = Paths::mvCachePath();
     QDir dir(cachePath);
     //按名字逆序排列，获取最后一个片段的状态(片段是一个接一个按顺序下载，一个完成后才进行下一个片段)
     QFileInfoList flist = dir.entryInfoList( QStringList()<< fileName+"*",
@@ -831,12 +929,12 @@ QString formatTime(qulonglong inval)
 void DownLoadUI::on_actionHide_Categories_triggered()
 {
     _logger->debug("on_actionHide_Categories_triggered");
-    if(ui->actionHide_Categories->text().compare("Hide Categories")==0){
+    if(ui->actionHide_Categories->text().compare(tr("ui_Hide Categories"))==0){
         ui->dockCategories->close();
-        ui->actionHide_Categories->setText("Show Categories");
+        ui->actionHide_Categories->setText(tr("ui_Show Categories"));
     }else{
         ui->dockCategories->showNormal();
-        ui->actionHide_Categories->setText("Hide Categories");
+        ui->actionHide_Categories->setText(tr("ui_Hide Categories"));
     }
 }
 
@@ -848,7 +946,7 @@ void DownLoadUI::on_categoriesTree_customContextMenuRequested(const QPoint &pos)
     int x = pos.x();
     int y= pos.y();
     qDebug()<<x<<","<<y;
-    QMessageBox::information(this,"pos",QString::number(x) + " " +QString::number(y),QMessageBox::Ok);
+    QMessageBox::information(this,tr("ui_pos"),QString::number(x) + " " +QString::number(y),QMessageBox::Ok);
 }
 
 //左侧分类的dockbar的邮件菜单
@@ -857,7 +955,7 @@ void DownLoadUI::on_dockWidgetContents_customContextMenuRequested(const QPoint &
     _logger->debug("on_dockWidgetContents_customContextMenuRequested");
     int x = pos.x();
     int y= pos.y();
-    QMessageBox::information(this,"pos22",QString::number(x) + " " +QString::number(y),QMessageBox::Ok);
+    QMessageBox::information(this,tr("ui_pos22"),QString::number(x) + " " +QString::number(y),QMessageBox::Ok);
 
 }
 
@@ -867,7 +965,7 @@ void DownLoadUI::on_actionTo_text_file_triggered()
     _logger->debug("on_actionTo_text_file_triggered");
     //export
     QFileDialog filedialog(this);
-    filedialog.setWindowTitle("Select the folder where you want to export.");
+    filedialog.setWindowTitle(tr("ui_Select the folder where you want to export."));
     //filedialog.setOption(QFileDialog::ShowDirsOnly);
     filedialog.setFileMode(QFileDialog::Directory);
     if(filedialog.exec()){
@@ -890,7 +988,7 @@ void DownLoadUI::on_actionTo_text_file_triggered()
         out.flush();
         f.close();
 
-        QMessageBox::information(this,"Exported Successfully","The current download list was successfully exported to \n"+seldir.first()+QDir::separator()+"export.txt",QMessageBox::Ok);
+        QMessageBox::information(this,tr("ui_Exported Successfully"),tr("ui_The current download list was successfully exported to \n")+seldir.first()+QDir::separator()+"export.txt",QMessageBox::Ok);
     }
     else return;
 }
@@ -901,7 +999,7 @@ void DownLoadUI::on_actionFrom_text_file_triggered()
     _logger->debug("on_actionFrom_text_file_triggered");
     //import
     QFileDialog filedialog(this);
-    filedialog.setWindowTitle("Select the .txt file containing urls.");
+    filedialog.setWindowTitle(tr("ui_Select the .txt file containing urls."));
     filedialog.setNameFilter(tr("Text (*.txt)"));;
     if(filedialog.exec()){ //打开目录对话框
         QStringList selfile = filedialog.selectedFiles().first().split(QDir::separator()); //用路径分隔符 分隔
@@ -925,7 +1023,7 @@ void DownLoadUI::on_actionFrom_text_file_triggered()
             url = in.readLine();
         }
         f.close();
-        QMessageBox::information(this,"Imported Successfully","Found " + QString::number(count)+" urls ",QMessageBox::Ok);
+        QMessageBox::information(this,tr("ui_Imported Successfully"),"Found " + QString::number(count)+" urls ",QMessageBox::Ok);
     }
     else return;
 }
@@ -934,7 +1032,7 @@ void DownLoadUI::on_actionFrom_text_file_triggered()
 void DownLoadUI::on_actionDelete_All_Completed_triggered()
 {
     _logger->debug("on_actionDelete_All_Completed_triggered");
-    int reply = QMessageBox::warning(this,"Confirm","Are you sure you want to DELETE the completed downloads from the list?\nNote:Actual files will not be deleted in this process.",QMessageBox::Yes,QMessageBox::No);
+    int reply = QMessageBox::warning(this,tr("ui_Confirm"),tr("ui_Are you sure you want to DELETE the completed downloads from the list?\nNote:Actual files will not be deleted in this process."),QMessageBox::Yes,QMessageBox::No);
     if(reply==QMessageBox::Yes){
         int count=0;
         for(int i=0;i < model->rowCount();i++){ //遍历记录
@@ -943,16 +1041,13 @@ void DownLoadUI::on_actionDelete_All_Completed_triggered()
                 count++;
             }
         }
-        QMessageBox::information(this,"Removed Completed Downloads","Successfully removed "+ QString::number(count)+" downloads.",QMessageBox::Ok);
+        QMessageBox::information(this,tr("ui_Removed Completed Downloads"),tr("ui_Successfully removed ")+ QString::number(count)+tr("ui_ downloads."),QMessageBox::Ok);
     }
 }
 
 //关于
 void DownLoadUI::on_actionAbout_triggered()
 {
-   // About123 *about =new About123();
-    //about->show();
-
     DevManagerDialog *dlg = new DevManagerDialog(this);
     dlg->show();
 }
@@ -966,6 +1061,7 @@ void DownLoadUI::slotDownloadInited(const Download* download){
 //DownLoader - slots, 主要是ui上状态更新
 void DownLoadUI::slotUpdateUrlsTable(const Download *download){
     return;
+    /*
     _logger->debug("updateUrlsTable1");
 
     if(download == NULL)
@@ -1012,7 +1108,7 @@ void DownLoadUI::slotUpdateUrlsTable(const Download *download){
         }
     }
     _logger->debug("end updateUrlsTable");
-
+*/
 }
 
 
@@ -1029,13 +1125,9 @@ void DownLoadUI::slotDownloadResumed(const Download *download)
 
 void DownLoadUI::slotDownloadFailed(const Download* download){
     //更新状态
-    model->setStatus(download->_row, Status::Failed);
-    slotUpdateUrlsTable(download);
+    _dbMan->setStatus(download->ID(), Status::Failed);
+    //model->setStatus(download->_row, Status::Failed);  //根据row来更新数据是不靠谱的，原因是行会随着操作变化
+    //slotUpdateUrlsTable(download);
 
-    TrayIcon->showMessage("Download Failed",download->name(),QSystemTrayIcon::Information,5000);
-    if(isHidden()){
-        if(!TrayIcon->blinking)
-            TrayIcon->setBlink(true);
-    }
-
+    trayMsg(tr("ui_Download Failed"), download->name());
 }

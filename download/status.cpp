@@ -31,7 +31,7 @@ Status::Status(QObject *parent) :
     _bytesReceived = _bytesSegReceived = 0;
     _downloadRate = _progress = 0;
     _dlMode = NewDownload;
-    setDownloadStatus(Idle);
+    setDownloadStatus(Paused);
     _segidx = _segsum = 0; //-1???
     mLastProgress = mLastSpeed = 0;
     startTime();
@@ -108,23 +108,23 @@ QString Status::downloadStatusString() const{
 QString Status::transDownLoadString(int status){
     switch(status){
     case Idle:
-        return "Idle";
+        return tr("Idle");
 //    case Starting:
-//        return "Starting";
+//        return tr("Starting");
     case Downloading:
-        return "Downloading";
+        return tr("Downloading");
     case WaitCombine:
-        return "Combining";
+        return tr("Combining");
     case Failed:
-        return "Failed";
+        return tr("Failed");
     case Paused:
-        return "Paused";
+        return tr("Paused");
     case WaitTrans:
-        return "Translating";
+        return tr("Translating");
     case WaitStore:
-        return "Storing";
+        return tr("Wait Store");
     case Finished:
-        return "Finished";
+        return tr("Finished");
     }
 
     return QString();
